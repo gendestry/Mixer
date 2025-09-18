@@ -113,53 +113,98 @@
 #include "DMX/Fixture/Fixture.h"
 #include <iostream>
 
-#include "DMX/Universe.h"
+// #include "DMX/Universe.h"
+#include "Helper/FragmentedStorage.h"
 
+struct Data : public Fragment
+{
+    Data(uint32_t size)
+        : Fragment(size)
+    {}
+};
 
 int main()
 {
     using namespace DMX;
 
-    Universe uni(1);
-    Fixture ledbar("Astera10");
-    // ledbar.add<Parameters::PositionPan>();
-    ledbar.addMultiple<Parameters::ColorRGB>(10);
-    uni.add(ledbar);
-    uni.add(ledbar);
-
-
-
+    FragmentedStorage<Data, 100> storage;
+    Data d(5);
+    try
     {
-        auto fix = uni.getLight(0);
-        auto colors = (*fix)[Parameters::ParameterTypes::COLOR];
-
-        if (colors.has_value())
-        {
-            auto colorsV = colors.value().get();
-            for (auto color : colorsV)
-            {
-                color->setValue("R", 80.f);
-            }
-        }
+        storage.add(d);
+        storage.add(d, 5);
+        storage.add(d, 8);
     }
-
+    catch (const std::exception& e)
     {
-        auto fix = uni.getLight(1);
-        auto colors = (*fix)[Parameters::ParameterTypes::COLOR];
-
-        if (colors.has_value())
-        {
-            auto& colorsV = colors.value().get();
-            for (auto& color : colorsV)
-            {
-                color->setValue("G", 70.f);
-            }
-        }
+        std::cout << e.what() << std::endl;
+        // return 1;
     }
-    uni.print();
-    // uni.getBytes();
-    // try
+    // storage.add(d, 15);
+    storage.printFragments();
+
+    // Universe uni(1);
+    // Fixture par("Parica");
+    // par.add<Parameters::Dimmer>();
+    // par.add<Parameters::ColorRGB>();
+    // //
+    // // std::cout << par.describe();
+    //
+    // Fixture ledbar("Astera10");
+    // ledbar.addMultiple<Parameters::ColorRGB>(5);
+    //
+    // // uni.addMultiple(par, 5);
+    // uni.add(ledbar);
+    // uni.add(par);
+    //
+    // std::cout << par.describe();
+    // std::cout << ledbar.describe();
+    //
+    //
     // {
+    //     auto fix = uni["Astera10"];
+    //     // auto lbfix = uni["Astera10"];
+    //     // fix.insert(fix.end(), lbfix.begin(), lbfix.end());
+    //
+    //     for (auto &f : fix)
+    //     {
+    //
+    //         auto colors = (*f)[Parameters::ParameterTypes::COLOR];
+    //         if (colors.has_value())
+    //         {
+    //             // std::cout << colors.value().get().size() << std::endl;
+    //             auto colorsV = colors.value().get();
+    //             // colorsV[0]->setValue("R", 10.f);
+    //             // colorsV[1]->setValue("R", 20.f);
+    //             // colorsV[2]->setValue("R", 30.f);
+    //             // colorsV[3]->setValue("R", 40.f);
+    //             // colorsV[4]->setValue("R", 50.f);
+    //             // for (auto color : colorsV)
+    //             // {
+    //             //     color->setValue("R", 80.f);
+    //             // }
+    //         }
+    //     }
+    //
+    // }
+    // //
+    // // {
+    // //     auto fix = uni.getLight(1);
+    // //     auto colors = (*fix)[Parameters::ParameterTypes::COLOR];
+    // //
+    // //     if (colors.has_value())
+    // //     {
+    // //         auto& colorsV = colors.value().get();
+    // //         for (auto& color : colorsV)
+    // //         {
+    // //             color->setValue("G", 70.f);
+    // //         }
+    // //     }
+    // // }
+    // uni.print();
+    // // uni.getBytes();
+    // // try
+    // // {
     //
     // }
     // catch (const std::exception& e)

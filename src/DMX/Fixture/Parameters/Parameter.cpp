@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <cmath>
+#include <iostream>
 
 namespace DMX::Parameters
 {
@@ -47,8 +48,6 @@ namespace DMX::Parameters
             const auto off = m_baseOffset + m_offsets[key];
             if (m_bytes_per_type == 1)
             {
-                // printf("%p\n", &m_bytes[m_offsets[key]]);
-                // printf("%d\n", m_offsets[key]);
                 m_bytes[off] = static_cast<uint8_t>(p);
             }
         }
@@ -57,7 +56,7 @@ namespace DMX::Parameters
     std::string Parameter::describe() const
     {
         std::stringstream ss;
-        ss << "[" << parameterTypesToString(m_type) << "]\n";
+        ss << "[" << parameterTypesToString(m_type) << "]: "<< m_baseOffset<<"\n";
         for (auto& [key, value] : m_offsets)
         {
             ss << " - " << key << ": " << (value + m_baseOffset) << std::endl;

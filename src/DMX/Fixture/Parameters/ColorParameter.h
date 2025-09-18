@@ -17,6 +17,7 @@ namespace DMX::Parameters
         {
             int16_t index = -TBytes;
             ((m_offsets[fieldTypeToString(TTypes)] = index += TBytes), ...);
+
         }
 
     };

@@ -40,7 +40,7 @@ public:
     requires std::is_base_of_v<Parameters::Parameter, T>
     void add()
     {
-        m_Parameters.emplace_back(std::make_shared<T>(&m_bytes[m_totalSize], m_totalSize));
+        m_Parameters.emplace_back(std::make_shared<T>(m_bytes, m_totalSize));
         m_indexes[m_Parameters.back()->getType()].push_back(m_Parameters.back());
         m_totalSize += m_Parameters.back()->getSize();
     }

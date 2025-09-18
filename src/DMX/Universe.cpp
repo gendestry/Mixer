@@ -38,7 +38,7 @@ namespace DMX {
             {
                 uint16_t startOffset = !start.has_value() ? 0 : start.value();
                 fragment.start = startOffset;
-                fragment.m_bytes = &m_bytes[startOffset];
+                fragment.m_bytes = m_bytes;
                 // fragment.m_ID = Light::incrementID(fragment.m_Name);
 
                 m_fixtures.push_back(fragment);
@@ -61,7 +61,8 @@ namespace DMX {
                 if (_start + frag.getTotalSize() + fragment.getTotalSize() <= MAX_SIZE)
                 {
                     fragment.start = _start + frag.getTotalSize();
-                    fragment.m_bytes = &m_bytes[fragment.start];
+                    // std::cout << fragment.start << std::endl;
+                    fragment.m_bytes = m_bytes;
                     // fragment.m_ID = Light::incrementID(fragment.m_Name);
                     m_fixtures.push_back(fragment);
                     fillBytesPatched(fragment.start, fragment.start + fragment.getTotalSize());
@@ -95,7 +96,7 @@ namespace DMX {
                         if (current.start + current.getTotalSize() <= start.value() && start.value() + size <= next.start)
                         {
                             fragment.start = start.value();
-                            fragment.m_bytes = &m_bytes[fragment.start];
+                            fragment.m_bytes = m_bytes;
                             // fragment.m_ID = Light::incrementID(fragment.m_Name);
 
                             m_fixtures.insert(it, fragment);
@@ -124,7 +125,7 @@ namespace DMX {
                         if (start.value() + size <= MAX_SIZE)
                         {
                             fragment.start = start.value();
-                            fragment.m_bytes = &m_bytes[fragment.start];
+                            fragment.m_bytes = m_bytes;
                             // fragment.m_ID = Light::incrementID(fragment.m_Name);
 
                             m_fixtures.push_back(fragment);
@@ -146,7 +147,7 @@ namespace DMX {
     {
         for (int i = 0; i < amount; i++)
         {
-            if (!add(fragment, i == 0 ? start : std::nullopt))
+            if (!add(fragment, start))
             {
                 return false;
             }
