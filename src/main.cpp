@@ -114,6 +114,7 @@
 #include <iostream>
 
 // #include "DMX/Universe.h"
+#include "DMX/Universe.h"
 #include "Helper/FragmentedStorage.h"
 
 struct Data : public Fragment
@@ -127,21 +128,28 @@ int main()
 {
     using namespace DMX;
 
-    FragmentedStorage<Data, 100> storage;
-    Data d(5);
-    try
-    {
-        storage.add(d);
-        storage.add(d, 5);
-        storage.add(d, 8);
-    }
-    catch (const std::exception& e)
-    {
-        std::cout << e.what() << std::endl;
-        // return 1;
-    }
+    Fixture ledbar("led");
+    ledbar.addMultiple<Parameters::ColorRGB>(10);
+
+    Universe uni(1);
+    uni.add(ledbar);
+    uni.add(ledbar);
+    uni.printFragments();
+    // FragmentedStorage<Data, 100> storage;
+    // Data d(5);
+    // try
+    // {
+    //     storage.add(d);
+    //     storage.add(d, 5);
+    //     storage.add(d, 8);
+    // }
+    // catch (const std::exception& e)
+    // {
+    //     std::cout << e.what() << std::endl;
+    //     // return 1;
+    // }
     // storage.add(d, 15);
-    storage.printFragments();
+    // storage.printFragments();
 
     // Universe uni(1);
     // Fixture par("Parica");

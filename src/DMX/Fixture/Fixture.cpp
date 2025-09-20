@@ -11,20 +11,20 @@ namespace DMX
 {
 
     Fixture::Fixture(const std::string& name)
-        : m_name(name)
+        : m_name(name), Fragment()
     {}
 
     Fixture::Fixture(const Fixture& other)
     {
-        m_totalSize = other.m_totalSize;
-        start = other.start;
+        m_size = other.m_size;
+        m_start = other.m_start;
         // m_FID = other.m_FID;
         m_name = other.m_name;
         m_bytes = other.m_bytes;
 
         m_Parameters.reserve(other.m_Parameters.size());
 
-        uint16_t offset = start;
+        uint16_t offset = m_start;
         for (int i = 0; i < other.m_Parameters.size(); i++)
         {
             m_Parameters.push_back(std::make_shared<Parameters::Parameter>(*other.m_Parameters[i]));
@@ -56,20 +56,20 @@ namespace DMX
         return getParameters(type);
     }
 
-    std::string Fixture::getName() const
-    {
-        return m_name;
-    }
-
-    std::size_t Fixture::getTotalSize() const
-    {
-        return m_totalSize;
-    }
+    // std::string Fixture::getName() const
+    // {
+    //     return m_name;
+    // }
+    //
+    // std::size_t Fixture::getTotalSize() const
+    // {
+    //     return m_size;
+    // }
 
     std::string Fixture::describe() const
     {
         std::stringstream ss;
-        ss << "Start: "<< start << std::endl;
+        ss << "m_start: "<< m_start << std::endl;
         for (auto& p : m_Parameters)
         {
             ss <<  p->describe();

@@ -66,9 +66,10 @@
 
 public:
 
-    explicit Fragment(uint32_t size)
-        : m_size(size)
-    {}
+
+    // explicit Fragment(uint32_t size)
+    //     : m_size(size)
+    // {}
 
     [[nodiscard]] uint32_t getStart() const { return m_start; }
     [[nodiscard]] uint32_t getSize() const { return m_size; }
@@ -85,6 +86,7 @@ template <typename T, size_t TSize>
 requires std::is_base_of_v<Fragment, T>
 class FragmentedStorage
 {
+protected:
     std::list<T> m_fragments;
     std::array<uint8_t, TSize> m_buffer;
     std::array<bool, TSize> m_bytesPatched;
@@ -116,6 +118,7 @@ public:
             if (fragment.getSize() <= TSize)
             {
                 fragment.setStart(0);
+                // fragment.set
                 fragment.setBuffer(m_buffer.data());
                 m_fragments.push_back(fragment);
                 fillBytesPatched(0, fragment.getSize());
@@ -175,51 +178,12 @@ public:
         }
     }
 
-    void printFragments() const
-    {
-        constexpr uint16_t printableOffset = 1;
-        std::string col = "";
+    // [[nodiscard]] std::reference_wrapper<std::list<T>> getFragments()
+    // {
+    //     return m_fragments;
+    // }
 
-        for (int i = 0; i < m_fragments.size(); i++)
-        {
-            uint16_t offset = 0;
+    [[nodiscard]] uint16_t getSize() const { return m_fragments.size(); }
 
-            auto it = m_fragments.begin();
-            std::advance(it, i);
-            auto &curr = *it;
-
-            int16_t cstart = curr.getStart();
-            int16_t cnext = curr.getOffset();
-            int16_t cend = curr.getEnd();
-
-            if (cstart != 0 && i == 0)
-            {
-                printf("\x1B[2m[%3d, %3d]\x1B[3m%s Unpatched %s\n", 0 + offset + printableOffset, cstart - 1 + offset + printableOffset, colorItalic.c_str(), colorReset.c_str());
-            }
-
-            // col = nextColor(cstart);
-
-            // std::string temp =
-            printf("%s[%3d, %3d] %s%s (%d) %s\n", col.c_str(), cstart + offset + printableOffset, cend + offset + printableOffset, colorItalic.c_str(), curr.getName().c_str(), curr.getSize(), colorReset.c_str());
-
-            if (i < m_fragments.size() - 1)
-            {
-                std::advance(it, 1);
-                auto &next = *it;
-                if (curr.getOffset() != next.getStart())
-                {
-                    printf("\x1B[2m[%3d, %3d]\x1B[3m%s Unpatched %s\n", cnext + offset + printableOffset, next.getStart() - 1 + offset + printableOffset, colorItalic.c_str(), colorReset.c_str());
-                    continue;
-                }
-            }
-            else
-            {
-                if (curr.getOffset() < TSize)
-                {
-                    printf("\x1B[2m[%3d, %3d]\x1B[3m%s Unpatched %s\n", cnext + offset + printableOffset, TSize - 1 + offset + printableOffset, colorItalic.c_str(), colorReset.c_str());
-                    continue;
-                }
-            }
-        }
-    }
+    [[nodiscard]] std::reference_wrapper<std::list<T>> getFragments() { return m_fragments; }
 };
