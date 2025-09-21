@@ -1,0 +1,3 @@
+/home/Bobi/Coding/Mixer/build/CMakeFiles/mixer.dir
+/home/Bobi/Coding/Mixer/build/CMakeFiles/edit_cache.dir
+/home/Bobi/Coding/Mixer/build/CMakeFiles/rebuild_cache.dir

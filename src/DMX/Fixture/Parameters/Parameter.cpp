@@ -10,11 +10,11 @@
 
 namespace DMX::Parameters
 {
-    Parameter::Parameter(uint8_t* bytes, uint16_t baseOffset)
+    Parameter::Parameter(uint8_t* bytes, uint32_t baseOffset)
         : m_type(ParameterTypes::NONE), m_bytes(bytes), m_baseOffset(baseOffset), m_size(0)
     {}
 
-    Parameter::Parameter(uint8_t* uni, uint16_t baseOffset, uint8_t bytesPerType, ParameterTypes type, std::size_t size)
+    Parameter::Parameter(uint8_t* uni, uint32_t baseOffset, uint8_t bytesPerType, ParameterTypes type, std::size_t size)
         : m_bytes(uni), m_baseOffset(baseOffset), m_bytes_per_type(bytesPerType), m_type(type), m_size(size)
     {}
 
@@ -38,9 +38,8 @@ namespace DMX::Parameters
         m_bytes = bytes;
     }
 
-    void Parameter::setValue(const std::string& key, float percentage)
-    {
-        uint32_t size = pow(2, m_bytes_per_type * 8);
+    void Parameter::setValue(const std::string& key, float percentage) {
+        const uint32_t size = pow(2, m_bytes_per_type * 8) - 1;
         uint32_t p = static_cast<uint32_t>((percentage / 100.0f) * size);
 
         if (m_offsets.contains(key))

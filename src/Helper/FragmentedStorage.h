@@ -1,85 +1,47 @@
+//
+// Created by Bobi on 9/21/25.
+//
+
 #pragma once
+#include <sstream>
 #include <cstdint>
-#include <list>
-#include <optional>
-#include <iostream>
 #include <array>
+#include <cmath>
+#include <format>
+#include <list>
+#include <memory>
+#include <optional>
+#include <type_traits>
+#include <vector>
 
-// struct Fragmented
-// {
-//     uint32_t m_start = 0U;
-//     uint32_t m_size = 0U;
-//
-//     // size_t m_size = 0U;
-//     virtual ~Fragmented() = default;
-//     [[nodiscard]] virtual uint32_t getSize() const = 0;
-// };
-// //
-// template <typename T, size_t TSize>
-// requires std::is_base_of_v<Fragmented, T>
-// class FragmentedStorage
-// {
-//     struct Fragment
-//     {
-//         // protected:
-//         std::shared_ptr<T> m_ptr = nullptr;
-//         // uint8_t* m_buffer = nullptr;
-//     };
-//
-//     std::list<Fragment> m_fragments;
-//     uint8_t m_buffer[TSize] = {0U};
-// public:
-//     bool add(const T& fragment, std::optional<uint32_t> start = std::nullopt)
-//     {
-//         if (m_fragments.empty())
-//         {
-//
-//             const uint32_t size = fragment.getSize();
-//             const uint32_t startOffset = !start.has_value() ? 0 : start.value();
-//             if (m_fragments.empty())
-//             {
-//                 if (size <= TSize)
-//                 {
-//                     fragment.setStart(startOffset);
-//                     fragment.m_buffer = m_buffer;
-//                     m_fragments.push_back(std::make_shared<T>(fragment));
-//                     // fillBytesPatched(startOffset, startOffset + size);
-//                 }
-//                 else
-//                 {
-//                     std::cout << "Segment exceeds max size" << std::endl;
-//                     return false;
-//                 }
-//             }
-//
-//         }
-//     }
-// };
+#include <iostream>
 
- struct Fragment
- {
-     // protected:
-     uint32_t m_start = 0U;
-     uint32_t m_size = 0U;
-     uint8_t* m_buffer = nullptr;
-     std::string m_name = "Name";
+#include "Utils.h"
 
-public:
+namespace Utils
+{
+const std::string colorGreen = "\x1B[32m";
+const std::string colorYellow = "\x1B[33m";
+const std::string colorBlue = "\x1B[34m";
+const std::string colorReset = "\x1B[0m";
+const std::string colorDim = "\x1B[2m";
+const std::string colorItalic = "\x1B[3m";
 
+struct Fragment
+{
+    uint32_t start = 0U;
+    uint32_t size = 0U;
+    uint8_t* buffer = nullptr;
+    std::string name;
 
-    // explicit Fragment(uint32_t size)
-    //     : m_size(size)
-    // {}
+    Fragment() = default;
+    explicit Fragment(const std::string& name) : name(name) {}
+    explicit Fragment(uint32_t size) : size(size) {}
+    explicit Fragment(uint32_t start, uint32_t size) : start(start), size(size) {}
 
-    [[nodiscard]] uint32_t getStart() const { return m_start; }
-    [[nodiscard]] uint32_t getSize() const { return m_size; }
-    [[nodiscard]] uint32_t getEnd() const { return m_start + m_size - 1; }
-    [[nodiscard]] uint32_t getOffset() const { return m_start + m_size; }
-    [[nodiscard]] std::string getName() const { return m_name; }
+    virtual void setStart(uint32_t st) { start = st; };
+    virtual void setBuffer(uint8_t* buf) {buffer = buf;}
 
-    void setStart(uint32_t start) { m_start = start; }
-    void setSize(uint32_t size) { m_size = size; }
-    void setBuffer(uint8_t* buffer) { m_buffer = buffer; }
 };
 
 template <typename T, size_t TSize>
@@ -87,103 +49,148 @@ requires std::is_base_of_v<Fragment, T>
 class FragmentedStorage
 {
 protected:
-    std::list<T> m_fragments;
-    std::array<uint8_t, TSize> m_buffer;
-    std::array<bool, TSize> m_bytesPatched;
+    std::list<std::shared_ptr<T>> m_fragments;
+    std::array<uint8_t, TSize> m_buffer = { 0U };
+    std::array<uint16_t, TSize> m_bytesPatched = { 0U };
+    uint16_t m_fragmentsNum = 1U;
 
-    void fillBytesPatched(uint16_t start, uint16_t end)
+    void fillBytesPatched(uint32_t start, uint32_t end)
     {
-        static uint16_t num = 1;
-        for (uint16_t i = start; i < end; i++)
-        {
-            m_bytesPatched[i] = num;
-        }
-
-        num++;
+        std::fill(m_bytesPatched.begin() + start, m_bytesPatched.begin() + end, m_fragmentsNum);
+        m_fragmentsNum++;
     }
-public:
-    // bool add(const T& fragment, std::optional<uint32_t> start = std::nullopt)
-    // {
-    //     const uint32_t frag_size = m_fragments.size();
-    //     if (m_fragments.empty())
-    //     {
-    //
-    //     }
-    // }
 
-    void add(T& fragment, std::optional<uint32_t> start = std::nullopt)
+    [[nodiscard]] std::string nextColor(int index) const
     {
-        if (m_fragments.empty())
-        {
-            if (fragment.getSize() <= TSize)
-            {
-                fragment.setStart(0);
-                // fragment.set
-                fragment.setBuffer(m_buffer.data());
-                m_fragments.push_back(fragment);
-                fillBytesPatched(0, fragment.getSize());
-            }
-            else
-            {
-                throw std::runtime_error("Segment is to big");
-            }
-        }
-        else if (!start.has_value())
-        {
-            auto& f = m_fragments.back();
+        std::vector<float> colorVecHsv = {110.0f, 0.5f, 0.8f};
+        colorVecHsv[0] = std::fmod(colorVecHsv[0] + (m_bytesPatched[index] * 65), 360.0f);
+        const auto colorVec = hsvToRgb(colorVecHsv);
+        return colorByRGB(colorVec[0], colorVec[1], colorVec[2], true);
+    }
 
-            if (f.getOffset() <= TSize)
+    void add(const T& fragment, const std::optional<uint32_t> start = std::nullopt) {
+        std::shared_ptr<T> newFragment = std::make_shared<T>(fragment);
+        newFragment->setBuffer(m_buffer.data());
+
+        if (!start.has_value())
+        {
+            const uint32_t offset = m_fragments.empty() ? 0 : m_fragments.back()->start + m_fragments.back()->size;
+            if (offset > TSize)
             {
-                fragment.setStart(f.getOffset());
-                fragment.setBuffer(m_buffer.data());
-                m_fragments.push_back(fragment);
-                fillBytesPatched(fragment.getStart(), fragment.getOffset());
+                throw std::out_of_range("Out of range");
             }
-            else
-            {
-                throw std::length_error("Segment size out of range");
-            }
+
+            newFragment->setStart(offset);
+            fillBytesPatched(offset, offset + fragment.size);
+            m_fragments.emplace_back(std::move(newFragment));
         }
         else
         {
             uint32_t _start = start.value();
             bool isFilled = m_bytesPatched[_start];
-            for (uint32_t i = _start + 1; (i < _start + fragment.getSize()) && !isFilled; i++)
+            for (uint32_t i = _start + 1; (i < _start + newFragment->size) && !isFilled; i++)
             {
                 isFilled = m_bytesPatched[i];
             }
 
-            if (!isFilled)
+            if (isFilled)
             {
-                fragment.setStart(_start);
-                fragment.setBuffer(m_buffer.data());
-                m_fragments.push_back(fragment);
-                fillBytesPatched(fragment.getStart(), fragment.getOffset());
+                throw std::runtime_error("Fragment overlaps other segment");
+            }
+
+            newFragment->setStart(_start);
+            fillBytesPatched(_start, newFragment->start + newFragment->size);
+            m_fragments.push_back(std::move(newFragment));
+        }
+    }
+public:
+
+    [[nodiscard]] size_t getNumFragments() const
+    {
+        return m_fragments.size();
+    }
+
+    [[nodiscard]] std::string fragmentsToString() const
+    {
+        std::stringstream ss;
+        std::string col = nextColor(0);
+        uint32_t curr = 0U;
+        for (const auto& fragment : m_fragments)
+        {
+            const uint32_t& start = fragment->start;
+            col = nextColor(start);
+            if (curr != start)
+            {
+                ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", colorDim, 0, start - 1, colorItalic, colorReset);
+            }
+            ss << std::format("{}[{:3}, {:3}]{} {} ({}){}\n", col, start, start + fragment->size - 1, colorItalic, fragment->name, fragment->size, colorReset);
+            curr = start + fragment->size;
+        }
+
+        if (curr != TSize - 1)
+        {
+            ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", colorDim, curr, TSize - 1, colorItalic, colorReset);
+        }
+        return ss.str();
+    }
+
+    [[nodiscard]] std::string bytesToString() const
+    {
+        std::stringstream ss;
+        std::vector<float> colorVecHsv = {110.0f, 0.5f, 0.8f};
+        const auto& bytes = m_buffer;
+
+        std::string col = nextColor(0);
+
+        const int32_t cond = std::min(static_cast<int32_t>(TSize), 16);
+        auto printSeperator = [&]()
+        {
+            for (int i = 0; i < cond; i++)
+            {
+                ss << "----";
+                if (i < cond - 1)
+                {
+                    ss << "-";
+                }
+            }
+            ss << std::endl;
+        };
+
+        ss << colorItalic;
+        for (int i = 0; i < cond; i++)
+        {
+            static const std::string hex = "0123456789ABCDEF";
+            ss << "0x" << hex[i] << "  ";
+        }
+        ss << colorReset << std::endl;
+
+        printSeperator();
+
+        for (int i = 0; i < bytes.size(); i++)
+        {
+            if (i % 16 == 0 && i != 0)
+            {
+                ss << std::endl;
+            }
+
+            if (m_bytesPatched[i] != 0)
+            {
+                col = nextColor(i);
             }
             else
             {
-                throw std::runtime_error("Segment overlaps other segment");
+                col = colorReset + colorDim + colorReset;
             }
+
+            ss << col << Utils::padByte(bytes[i], 3) << colorReset << "  ";
         }
+        ss << std::endl;
 
-        // m_fragmentsByName[fragment.getName()].push_back(getLight(m_fragments.size() - 1));
+        printSeperator();
 
+        return ss.str();
     }
-
-    void addMultiple(const T& fragment, uint16_t amount, std::optional<uint32_t> start = std::nullopt)
-    {
-        for (int i = 0; i < amount; i++)
-        {
-            add(fragment, start);
-        }
-    }
-
-    // [[nodiscard]] std::reference_wrapper<std::list<T>> getFragments()
-    // {
-    //     return m_fragments;
-    // }
-
-    [[nodiscard]] uint16_t getSize() const { return m_fragments.size(); }
-
-    [[nodiscard]] std::reference_wrapper<std::list<T>> getFragments() { return m_fragments; }
 };
+
+}
+

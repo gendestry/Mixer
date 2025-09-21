@@ -1,0 +1,1 @@
+/usr/sbin/c++ -Wl,--dependency-file=CMakeFiles/mixer.dir/link.d CMakeFiles/mixer.dir/src/DMX/Fixture/Fixture.cpp.o CMakeFiles/mixer.dir/src/DMX/Fixture/Parameters/Parameter.cpp.o CMakeFiles/mixer.dir/src/DMX/Universe.cpp.o CMakeFiles/mixer.dir/src/Helper/Utils.cpp.o CMakeFiles/mixer.dir/src/main.cpp.o -o mixer

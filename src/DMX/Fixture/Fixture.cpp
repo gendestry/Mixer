@@ -11,38 +11,45 @@ namespace DMX
 {
 
     Fixture::Fixture(const std::string& name)
-        : m_name(name), Fragment()
+        : Fragment(name)
     {}
 
     Fixture::Fixture(const Fixture& other)
     {
-        m_size = other.m_size;
-        m_start = other.m_start;
+        size = other.size;
+        start = other.start;
         // m_FID = other.m_FID;
-        m_name = other.m_name;
-        m_bytes = other.m_bytes;
+        name = other.name;
+        buffer = other.buffer;
 
-        m_Parameters.reserve(other.m_Parameters.size());
-
-        uint16_t offset = m_start;
-        for (int i = 0; i < other.m_Parameters.size(); i++)
+        for (auto param : other.m_Parameters)
         {
-            m_Parameters.push_back(std::make_shared<Parameters::Parameter>(*other.m_Parameters[i]));
-            m_indexes[m_Parameters[i]->getType()].push_back(m_Parameters.back());
-            // std::cout << "Offset: " << offset << std::endl;
-            m_Parameters.back()->setOffset(offset);
-            // std::cout
-            m_Parameters.back()->setBuffer(m_bytes);
-            // std::cout << m_indexes[m_Parameters[i]->getType()].back()->describe() << std::endl;
-            // std::cout <<m_Parameters[i]->describe() << std::endl;
-
-            offset += m_Parameters[i]->getSize();
+            m_Parameters.push_back(std::make_shared<Parameters::Parameter>(*param));
+            m_Parameters.back()->setOffset(start);
+            m_Parameters.back()->setBuffer(buffer);
+            m_indexes[m_Parameters.back()->getType()].push_back(m_Parameters.back());
         }
-
-        // for (auto [k, v] : m_)
     }
 
-    std::optional<std::reference_wrapper<std::vector<std::shared_ptr<Parameters::Parameter>>>> Fixture::getParameters(Parameters::ParameterTypes type)
+    void Fixture::setStart(uint32_t st) {
+        start = st;
+        auto temp = start;
+        for (auto param : m_Parameters)
+        {
+            param->setOffset(temp);
+            temp += param->getSize();
+        }
+    }
+
+    void Fixture::setBuffer(uint8_t* buf) {
+        buffer = buf;
+        for (auto param : m_Parameters)
+        {
+            param->setBuffer(buffer);
+        }
+    }
+
+    std::optional<std::list<std::shared_ptr<Parameters::Parameter>>> Fixture::getParameters(Parameters::ParameterTypes type)
     {
         if (m_indexes.contains(type))
         {
@@ -51,7 +58,7 @@ namespace DMX
         return std::nullopt;
     }
 
-    std::optional<std::reference_wrapper<std::vector<std::shared_ptr<Parameters::Parameter>>>> Fixture::operator[](Parameters::ParameterTypes type)
+    std::optional<std::list<std::shared_ptr<Parameters::Parameter>>> Fixture::operator[](Parameters::ParameterTypes type)
     {
         return getParameters(type);
     }
@@ -63,13 +70,14 @@ namespace DMX
     //
     // std::size_t Fixture::getTotalSize() const
     // {
-    //     return m_size;
+    //     return size;
     // }
 
     std::string Fixture::describe() const
     {
         std::stringstream ss;
-        ss << "m_start: "<< m_start << std::endl;
+        ss << "Start: "<< start << std::endl;
+        printf("%p\n", buffer);
         for (auto& p : m_Parameters)
         {
             ss <<  p->describe();
@@ -78,5 +86,5 @@ namespace DMX
         return ss.str();
     }
 
-    uint8_t* Fixture::getBytes() const { return m_bytes; }
+    uint8_t* Fixture::getBytes() const { return buffer; }
 }

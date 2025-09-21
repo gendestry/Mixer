@@ -110,31 +110,47 @@
 // Created by bobi on 10/09/2025.
 //
 
-#include "DMX/Fixture/Fixture.h"
+// #include "DMX/Fixture/Fixture.h"
 #include <iostream>
 
-// #include "DMX/Universe.h"
+#include "DMX/Group.h"
 #include "DMX/Universe.h"
-#include "Helper/FragmentedStorage.h"
 
-struct Data : public Fragment
-{
-    Data(uint32_t size)
-        : Fragment(size)
-    {}
-};
 
 int main()
 {
     using namespace DMX;
-
     Fixture ledbar("led");
     ledbar.addMultiple<Parameters::ColorRGB>(10);
 
+    Fixture par("par");
+    par.add<Parameters::Dimmer>();
+    par.add<Parameters::ColorRGB>();
+
     Universe uni(1);
-    uni.add(ledbar);
-    uni.add(ledbar);
-    uni.printFragments();
+    uni.addFixture(ledbar);
+    uni.addFixture(ledbar);
+    uni.addFixture(par);
+
+    FixtureGroup group;
+    group += uni["led"];
+    group += uni["par"];
+
+    for (auto fix : group()) {
+        auto params = fix->getParameters(Parameters::ParameterTypes::COLOR).value();
+        for (auto param : params) {
+            param->setValue("B", 100.f);
+            std::cout << param->describe();
+            // printf("%d, ", param->get());
+        }
+            printf("\n");
+
+    }
+
+    // printf("Neki %p", l1->buffer);
+    uni.print();
+    // // uni.add(ledbar);
+    // uni.print();
     // FragmentedStorage<Data, 100> storage;
     // Data d(5);
     // try

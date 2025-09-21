@@ -12,7 +12,7 @@ namespace DMX::Parameters
     {
         static constexpr std::size_t k_size = sizeof...(TTypes) * TBytes;
 
-        ColorParameter(uint8_t* bytes, uint16_t baseOffset)
+        ColorParameter(uint8_t* bytes, uint32_t baseOffset)
             : Parameter(bytes, baseOffset, TBytes, ParameterTypes::COLOR, k_size)
         {
             int16_t index = -TBytes;

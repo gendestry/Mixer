@@ -42,7 +42,7 @@ class Parameter : public Traits::Printable
 protected:
     // public:
     uint8_t* m_bytes = nullptr;
-    uint16_t m_baseOffset = 0U;
+    uint32_t m_baseOffset;
     ParameterTypes m_type;
     std::size_t m_size;
     uint8_t m_bytes_per_type;
@@ -54,8 +54,12 @@ protected:
     [[nodiscard]] static std::string parameterTypesToString(ParameterTypes t);
     [[nodiscard]] static std::string fieldTypeToString(FieldTypes field);
 public:
-    Parameter(uint8_t* bytes, uint16_t baseOffset);
-    explicit Parameter(uint8_t* uni, uint16_t baseOffset, uint8_t bytesPerType, ParameterTypes type, std::size_t size);
+    Parameter(uint8_t* bytes, uint32_t baseOffset);
+    explicit Parameter(uint8_t* uni, uint32_t baseOffset, uint8_t bytesPerType, ParameterTypes type, std::size_t size);
+
+    // Parameter(const Parameter& other) {
+    //     std::cout << "Copy Constructor" << std::endl;
+    // }
 
     // Parameter(const Parameter& other)
     // {
@@ -73,7 +77,7 @@ public:
     [[nodiscard]] std::size_t getSize() const;
 
     void setBuffer(uint8_t* bytes);
-    void setOffset(uint16_t offset)
+    void setOffset(uint32_t offset)
     {
         m_baseOffset = offset;
         // std::cout << "Set base offset: " << m_baseOffset << std::endl;
@@ -84,6 +88,7 @@ public:
         // }
     }
     void setValue(const std::string& key, float percentage);
+    uint8_t* getBuffer() {return m_bytes;}
 
     [[nodiscard]] std::string describe() const override;
 };

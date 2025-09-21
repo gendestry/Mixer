@@ -13,8 +13,7 @@ file(GLOB_RECURSE SOURCES
 )
 
 # Define the executable
-add_executable(${PROJECT_NAME} ${SOURCES}
-        src/DMX/Fixture/Parameters/Parameter.cpp)
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Attach include directories to the target (after it's created)
 target_include_directories(${PROJECT_NAME}

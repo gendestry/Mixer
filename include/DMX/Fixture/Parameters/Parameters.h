@@ -17,6 +17,7 @@ namespace DMX::Parameters
 
     using PositionPan = PositionParameter<1, PositionType::PAN>;
     using PositionTilt = PositionParameter<1, PositionType::TILT>;
+    using Position = PositionParameter<1, PositionType::PAN, PositionType::TILT>;
 
     using Dimmer = DimmerParameter<1, DimmerType::DIMMER>;
 }
