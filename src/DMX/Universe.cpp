@@ -11,23 +11,23 @@ namespace DMX {
 //
 //
 
-     std::shared_ptr<Fixture> Universe::getLight(std::size_t index)
-     {
-         auto it = m_fragments.begin();
-         size_t current = 0;
+const std::shared_ptr<Fixture>& Universe::getLight(std::size_t index)
+{
+    auto it = m_fragments.begin();
+    size_t current = 0;
 
-         while (it != m_fragments.end())
-         {
-             if (current == index)
-             {
-                 return *it;
-             }
-             ++it;
-             ++current;
-         }
+    while (it != m_fragments.end())
+    {
+        if (current == index)
+        {
+            return *it;
+        }
+        ++it;
+        ++current;
+    }
 
-         return nullptr;
-     }
+    throw std::out_of_range("Not found");
+}
 //
 //     std::vector<std::shared_ptr<Fixture>> Universe::getLights(std::string name)
 //     {
@@ -92,13 +92,15 @@ namespace DMX {
 //
 //
 //
-      void Universe::print()
-      {
-          std::cout << "Universe: " << m_universeID << ", Number of Lights: " << getNumFragments() << std::endl;
-          std::cout << "Patch list: " << std::endl;
-          std::cout << fragmentsToString();
+std::string Universe::describe() const
+{
+    std::stringstream ss;
+    ss << "Universe: " << m_universeID << ", Number of Lights: " << getNumFragments() << std::endl;
+    ss << "Patch list: " << std::endl;
+    ss << fragmentsToString();
 
-          std::cout << "Bytes: " << std::endl;
-          std::cout << bytesToString();
-      }
+    ss << "Bytes: " << std::endl;
+    ss << bytesToString();
+    return ss.str();
+}
 }

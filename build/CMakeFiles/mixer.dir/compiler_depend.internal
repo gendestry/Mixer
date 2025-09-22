@@ -823,7 +823,6 @@ CMakeFiles/mixer.dir/src/DMX/Universe.cpp.o
  /usr/include/c++/15/cstdint
  /usr/include/c++/15/cstdio
  /usr/include/c++/15/cstdlib
- /usr/include/c++/15/cstring
  /usr/include/c++/15/ctime
  /usr/include/c++/15/cwchar
  /usr/include/c++/15/cwctype
@@ -916,8 +915,6 @@ CMakeFiles/mixer.dir/src/DMX/Universe.cpp.o
  /usr/include/stdint.h
  /usr/include/stdio.h
  /usr/include/stdlib.h
- /usr/include/string.h
- /usr/include/strings.h
  /usr/include/sys/cdefs.h
  /usr/include/sys/select.h
  /usr/include/sys/single_threaded.h
@@ -1197,12 +1194,13 @@ CMakeFiles/mixer.dir/src/main.cpp.o
  /home/Bobi/Coding/Mixer/src/main.cpp
  /home/Bobi/Coding/Mixer/include/DMX/Fixture/Fixture.h
  /home/Bobi/Coding/Mixer/include/DMX/Fixture/Parameters/Parameters.h
- /home/Bobi/Coding/Mixer/include/DMX/Group.h
+ /home/Bobi/Coding/Mixer/include/DMX/FixtureGroup.h
  /home/Bobi/Coding/Mixer/include/DMX/Universe.h
  /home/Bobi/Coding/Mixer/src/DMX/Fixture/Parameters/ColorParameter.h
  /home/Bobi/Coding/Mixer/src/DMX/Fixture/Parameters/DimmerParameter.h
  /home/Bobi/Coding/Mixer/src/DMX/Fixture/Parameters/Parameter.h
  /home/Bobi/Coding/Mixer/src/DMX/Fixture/Parameters/PositionParameter.h
+ /home/Bobi/Coding/Mixer/src/DMX/FixtureGroup.cpp
  /home/Bobi/Coding/Mixer/src/Helper/FragmentedStorage.h
  /home/Bobi/Coding/Mixer/src/Helper/Printable.h
  /home/Bobi/Coding/Mixer/src/Helper/Utils.h
@@ -1421,7 +1419,6 @@ CMakeFiles/mixer.dir/src/main.cpp.o
  /usr/include/c++/15/cstdint
  /usr/include/c++/15/cstdio
  /usr/include/c++/15/cstdlib
- /usr/include/c++/15/cstring
  /usr/include/c++/15/ctime
  /usr/include/c++/15/cwchar
  /usr/include/c++/15/cwctype
@@ -1514,8 +1511,6 @@ CMakeFiles/mixer.dir/src/main.cpp.o
  /usr/include/stdint.h
  /usr/include/stdio.h
  /usr/include/stdlib.h
- /usr/include/string.h
- /usr/include/strings.h
  /usr/include/sys/cdefs.h
  /usr/include/sys/select.h
  /usr/include/sys/single_threaded.h

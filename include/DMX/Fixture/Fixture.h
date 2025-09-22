@@ -18,12 +18,10 @@ class Fixture : public Utils::Fragment
 {
     std::list<std::shared_ptr<Parameters::Parameter>> m_Parameters;
     std::unordered_map<Parameters::ParameterTypes, std::list<std::shared_ptr<Parameters::Parameter>>> m_indexes;
-    // std::size_t m_totalSize = 0;
 
     uint16_t m_FID = 0U;
 public:
 
-    // Fixture() = default;
     explicit Fixture(const std::string& name);
     Fixture(const Fixture& other);
 
@@ -53,6 +51,15 @@ public:
         for (auto param : m_Parameters) {
             printf("%p\n", param->getBuffer());
         }
+    }
+
+    template<Parameters::ParameterTypes TType>
+    [[nodiscard]] size_t paramsOfType() {
+        if (m_indexes.contains(TType)) {
+            return m_indexes[TType].size();
+        }
+
+        return 0;
     }
 
     [[nodiscard]] std::optional<std::list<std::shared_ptr<Parameters::Parameter>>> getParameters(Parameters::ParameterTypes type);

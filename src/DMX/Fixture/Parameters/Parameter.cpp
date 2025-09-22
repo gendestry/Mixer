@@ -40,7 +40,7 @@ namespace DMX::Parameters
 
     void Parameter::setValue(const std::string& key, float percentage) {
         const uint32_t size = pow(2, m_bytes_per_type * 8) - 1;
-        uint32_t p = static_cast<uint32_t>((percentage / 100.0f) * size);
+        const uint32_t p = static_cast<uint32_t>((percentage / 100.0f) * size);
 
         if (m_offsets.contains(key))
         {
@@ -59,7 +59,6 @@ namespace DMX::Parameters
         for (auto& [key, value] : m_offsets)
         {
             ss << " - " << key << ": " << (value + m_baseOffset) << std::endl;
-            // ss << " - " << key << ": " << (value) << std::endl;
         }
 
         return ss.str();
@@ -79,51 +78,50 @@ namespace DMX::Parameters
             return "POSITION";
         default:
             return "UNKNOWN";
-            // throw std::invalid_argument("Invalid parameter type");
         }
     }
 
     std::string Parameter::fieldTypeToString(FieldTypes field)
     {
-        return std::visit([](auto&& arg) -> std::string
+        return std::visit([]<typename T0>(T0&& arg) -> std::string
         {
-            using T = std::decay_t<decltype(arg)>;
+            using T = std::decay_t<T0>;
             if constexpr (std::is_same_v<T, ColorType>) {
                 // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
                 switch (arg)
                 {
                     case ColorType::R:
-                    return "R";
-                case ColorType::G:
-                    return "G";
-                case ColorType::B:
-                    return "B";
-                case ColorType::W:
-                    return "W";
+                        return "R";
+                    case ColorType::G:
+                        return "G";
+                    case ColorType::B:
+                        return "B";
+                    case ColorType::W:
+                        return "W";
+                }
             }
-        }
-        else if constexpr (std::is_same_v<T, PositionType>)
-        {
-            // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
-            switch (arg)
+            else if constexpr (std::is_same_v<T, PositionType>)
             {
-                case PositionType::PAN:
-                return "PAN";
-            case PositionType::TILT:
-                return "TILT";
-        }
-    }
-    else if constexpr (std::is_same_v<T, DimmerType>)
-    {
-        // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
-        switch (arg)
-        {
-            case (DimmerType::DIMMER):
-            return "DIMMER";
-    }
-}
+                // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
+                switch (arg)
+                {
+                    case PositionType::PAN:
+                        return "PAN";
+                    case PositionType::TILT:
+                        return "TILT";
+                }
+            }
+            else if constexpr (std::is_same_v<T, DimmerType>)
+            {
+                // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
+                switch (arg)
+                {
+                    case (DimmerType::DIMMER):
+                        return "DIMMER";
+                }
+            }
 
-return "UNKNOWN";
-}, field);
+            return "UNKNOWN";
+        }, field);
     }
 }

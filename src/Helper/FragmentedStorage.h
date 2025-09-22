@@ -14,8 +14,6 @@
 #include <type_traits>
 #include <vector>
 
-#include <iostream>
-
 #include "Utils.h"
 
 namespace Utils
@@ -35,6 +33,7 @@ struct Fragment
     std::string name;
 
     Fragment() = default;
+    virtual ~Fragment() = default;
     explicit Fragment(const std::string& name) : name(name) {}
     explicit Fragment(uint32_t size) : size(size) {}
     explicit Fragment(uint32_t start, uint32_t size) : start(start), size(size) {}
@@ -121,15 +120,15 @@ public:
             col = nextColor(start);
             if (curr != start)
             {
-                ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", colorDim, 0, start - 1, colorItalic, colorReset);
+                ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", colorDim, 1, start, colorItalic, colorReset);
             }
-            ss << std::format("{}[{:3}, {:3}]{} {} ({}){}\n", col, start, start + fragment->size - 1, colorItalic, fragment->name, fragment->size, colorReset);
+            ss << std::format("{}[{:3}, {:3}]{} {} ({}){}\n", col, start + 1, start + fragment->size, colorItalic, fragment->name, fragment->size, colorReset);
             curr = start + fragment->size;
         }
 
         if (curr != TSize - 1)
         {
-            ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", colorDim, curr, TSize - 1, colorItalic, colorReset);
+            ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", colorDim, curr + 1, TSize, colorItalic, colorReset);
         }
         return ss.str();
     }

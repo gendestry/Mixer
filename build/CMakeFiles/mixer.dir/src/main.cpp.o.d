@@ -138,8 +138,9 @@ CMakeFiles/mixer.dir/src/main.cpp.o: /home/Bobi/Coding/Mixer/src/main.cpp \
  /usr/include/c++/15/bits/basic_ios.tcc \
  /usr/include/c++/15/bits/ostream.tcc /usr/include/c++/15/istream \
  /usr/include/c++/15/bits/istream.tcc \
- /home/Bobi/Coding/Mixer/include/DMX/Group.h /usr/include/c++/15/memory \
- /usr/include/c++/15/bits/stl_tempbuf.h \
+ /home/Bobi/Coding/Mixer/src/DMX/FixtureGroup.cpp \
+ /home/Bobi/Coding/Mixer/include/DMX/FixtureGroup.h \
+ /usr/include/c++/15/memory /usr/include/c++/15/bits/stl_tempbuf.h \
  /usr/include/c++/15/bits/stl_uninitialized.h \
  /usr/include/c++/15/bits/stl_raw_storage_iter.h \
  /usr/include/c++/15/bits/align.h /usr/include/c++/15/bits/unique_ptr.h \
@@ -229,5 +230,4 @@ CMakeFiles/mixer.dir/src/main.cpp.o: /home/Bobi/Coding/Mixer/src/main.cpp \
  /home/Bobi/Coding/Mixer/src/Helper/Printable.h \
  /home/Bobi/Coding/Mixer/src/DMX/Fixture/Parameters/PositionParameter.h \
  /home/Bobi/Coding/Mixer/src/DMX/Fixture/Parameters/DimmerParameter.h \
- /home/Bobi/Coding/Mixer/include/DMX/Universe.h \
- /usr/include/c++/15/cstring /usr/include/string.h /usr/include/strings.h
+ /home/Bobi/Coding/Mixer/include/DMX/Universe.h

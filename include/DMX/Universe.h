@@ -3,9 +3,7 @@
 //
 
 #pragma once
-#include <array>
 #include <cstdint>
-#include <cstring>
 #include <list>
 #include <unordered_map>
 
@@ -22,23 +20,23 @@ namespace DMX
         Interval(std::string name, int start, int end) : name(name), start(start), end(end) {}
     };
 
-    class Universe : public Utils::FragmentedStorage<Fixture, 512>
+    class Universe : public Utils::FragmentedStorage<Fixture, 512>, public Traits::Printable
     {
         uint16_t m_universeID;
         std::unordered_map<std::string, std::list<std::shared_ptr<Fixture>>> m_fixturesByName;
 
     public:
-        explicit Universe(uint16_t universe = 1) : m_universeID(universe), FragmentedStorage<DMX::Fixture, 512>()
+        explicit Universe(uint16_t universe = 1)
+            : m_universeID(universe)
         {
-            // memset(&m_bytes[0], 0U, 512);
-        };
+        }
 
         void addFixture(const Fixture& fix, std::optional<uint32_t> start = std::nullopt) {
             this->add(fix, start);
             m_fixturesByName[fix.name].push_back(m_fragments.back());
         }
 
-        void addMultiple(const Fixture &fragment, uint16_t amount, std::optional<uint16_t> start = std::nullopt)
+        void addMultiple(const Fixture& fragment, uint16_t amount, std::optional<uint16_t> start = std::nullopt)
         {
             for (uint16_t i = 0; i < amount; i++)
             {
@@ -49,7 +47,7 @@ namespace DMX
         // [[nodiscard]] uint16_t numLights() const { return this->m.size(); }
         // [[nodiscard]] uint16_t getUniverseID() const { return m_universeID; }
 
-        [[nodiscard]] std::shared_ptr<Fixture> getLight(std::size_t index);
+        [[nodiscard]] const std::shared_ptr<Fixture>& getLight(std::size_t index);
         // [[nodiscard]] std::vector<std::shared_ptr<Fixture>> getLights(std::string name);
 
         // [[nodiscard]] Fixture& operator[](int index);
@@ -58,8 +56,7 @@ namespace DMX
 
         // [[nodiscard]] std::vector<uint8_t> operator()() const { return getBytes(); }
 
-
-        void print();
+        [[nodiscard]] std::string describe() const override;
 
 
     };
