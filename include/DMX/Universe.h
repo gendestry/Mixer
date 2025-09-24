@@ -31,18 +31,18 @@ namespace DMX
         {
         }
 
-        void addFixture(const Fixture& fix, std::optional<uint32_t> start = std::nullopt) {
+        void addFixture(Fixture& fix, std::optional<uint32_t> start = std::nullopt) {
             this->add(fix, start);
             m_fixturesByName[fix.name].push_back(m_fragments.back());
         }
 
-        void addMultiple(const Fixture& fragment, uint16_t amount, std::optional<uint16_t> start = std::nullopt)
-        {
-            for (uint16_t i = 0; i < amount; i++)
-            {
-                addFixture(fragment, start);
-            }
-        }
+        // void addMultiple(std::shared_ptr<Fixture> fragment, uint16_t amount, std::optional<uint16_t> start = std::nullopt)
+        // {
+        //     for (uint16_t i = 0; i < amount; i++)
+        //     {
+        //         addFixture(fragment, start);
+        //     }
+        // }
 
         // [[nodiscard]] uint16_t numLights() const { return this->m.size(); }
         // [[nodiscard]] uint16_t getUniverseID() const { return m_universeID; }

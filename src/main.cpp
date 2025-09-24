@@ -3,8 +3,9 @@
 //
 
 #include <iostream>
-#include "DMX/FixtureGroup.cpp"
+#include "DMX/FixtureGroup.h"
 #include "DMX/Universe.h"
+#include "Engine/Engine.h"
 
 
 int main()
@@ -17,34 +18,38 @@ int main()
     par.add<Parameters::Dimmer>();
     par.add<Parameters::ColorRGB>();
 
-    Universe uni(1);
-    Universe uni2(2);
-    uni.addFixture(ledbar);
-    uni2.addFixture(ledbar);
-    uni.addFixture(par);
-    uni.addFixture(par);
-    uni.addFixture(par);
-    uni.addFixture(par);
+    Engine engine;
+    engine.patch(ledbar, 1, 1);;
+    engine.patch(ledbar, 2, 1);
+    engine.patch(par, 1, 5, std::nullopt, 102);
 
-    FixtureGroup group;
-    group += uni["led"];
-    group += uni2["led"];
-    group += uni["par"];
+    FixtureGroup group("group1");
+    group += engine.getUniverse(1)["led"];
+    group += engine.getUniverse(2)["led"];
+    group += engine.getUniverse(1)["par"];
+    //
+    FixtureGroup ledbarGroup("ledbars");
+    ledbarGroup += engine.getUniverse(1)["led"];
+    ledbarGroup += engine.getUniverse(2)["led"];
 
-    for (auto fix : group()) {
-        auto params = fix->getParameters(Parameters::ParameterTypes::COLOR).value();
-        for (auto param : params) {
-            param->setValue("B", 100.f);
-        }
+    engine.addFixtureGroup(group);
+    engine.addFixtureGroup(ledbarGroup);
+    // engine.addToGroup(0, {101, 201, 102, 103, 104, 105, 106});
+    // engine.addToGroup(1, {101, 201});
+    //
+    //
+    for (auto color : group.getParameters(Parameters::ParameterTypes::COLOR))
+    {
+    color->setValue("B", 100.f);
     }
 
-    for (auto fix : uni["led"]) {
-        auto params = fix->getParameters(Parameters::ParameterTypes::COLOR).value();
-        for (auto param : params) {
-            param->setValue("R", 25.f);
-        }
+    for (auto param : ledbarGroup.getParameters(Parameters::ParameterTypes::COLOR)) {
+    param->setValue("R", 25.f);
     }
 
-    std::cout << uni.describe();
+
+    std::cout << engine.getUniverse(1).describe();
+    std::cout << engine.getUniverse(2).describe();
+
     return 0;
 }

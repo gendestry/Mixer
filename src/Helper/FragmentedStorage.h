@@ -30,6 +30,7 @@ struct Fragment
     uint32_t start = 0U;
     uint32_t size = 0U;
     uint8_t* buffer = nullptr;
+    uint16_t id = 0U;
     std::string name;
 
     Fragment() = default;
@@ -67,7 +68,7 @@ protected:
         return colorByRGB(colorVec[0], colorVec[1], colorVec[2], true);
     }
 
-    void add(const T& fragment, const std::optional<uint32_t> start = std::nullopt) {
+    void add(T& fragment, const std::optional<uint32_t> start = std::nullopt) {
         std::shared_ptr<T> newFragment = std::make_shared<T>(fragment);
         newFragment->setBuffer(m_buffer.data());
 
@@ -122,7 +123,7 @@ public:
             {
                 ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", colorDim, 1, start, colorItalic, colorReset);
             }
-            ss << std::format("{}[{:3}, {:3}]{} {} ({}){}\n", col, start + 1, start + fragment->size, colorItalic, fragment->name, fragment->size, colorReset);
+            ss << std::format("{}[{:3}, {:3}]{} {} {} ({}){}\n", col, start + 1, start + fragment->size, colorItalic, fragment->name, fragment->id, fragment->size, colorReset);
             curr = start + fragment->size;
         }
 

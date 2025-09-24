@@ -19,7 +19,6 @@ class Fixture : public Utils::Fragment
     std::list<std::shared_ptr<Parameters::Parameter>> m_Parameters;
     std::unordered_map<Parameters::ParameterTypes, std::list<std::shared_ptr<Parameters::Parameter>>> m_indexes;
 
-    uint16_t m_FID = 0U;
 public:
 
     explicit Fixture(const std::string& name);

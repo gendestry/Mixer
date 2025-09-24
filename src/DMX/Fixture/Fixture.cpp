@@ -18,6 +18,7 @@ namespace DMX
     {
         size = other.size;
         start = other.start;
+        id = other.id;
         // m_FID = other.m_FID;
         name = other.name;
         buffer = other.buffer;
@@ -76,7 +77,7 @@ namespace DMX
     std::string Fixture::describe() const
     {
         std::stringstream ss;
-        ss << "Start: "<< start << std::endl;
+        ss << std::format("FID: {}, start: {}\n", id, start);
         printf("%p\n", buffer);
         for (auto& p : m_Parameters)
         {
