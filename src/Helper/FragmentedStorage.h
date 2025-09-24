@@ -68,8 +68,9 @@ protected:
         return colorByRGB(colorVec[0], colorVec[1], colorVec[2], true);
     }
 
-    void add(T& fragment, const std::optional<uint32_t> start = std::nullopt) {
-        std::shared_ptr<T> newFragment = std::make_shared<T>(fragment);
+    void add(std::shared_ptr<T> newFragment, const std::optional<uint32_t> start = std::nullopt) {
+        // std::shared_ptr<T> newFragment = std::make_shared<T>(fragment);
+        // T& fragment = newFragment.get();
         newFragment->setBuffer(m_buffer.data());
 
         if (!start.has_value())
@@ -81,7 +82,7 @@ protected:
             }
 
             newFragment->setStart(offset);
-            fillBytesPatched(offset, offset + fragment.size);
+            fillBytesPatched(offset, offset + newFragment->size);
             m_fragments.emplace_back(std::move(newFragment));
         }
         else

@@ -34,17 +34,17 @@ int main()
 
     engine.addFixtureGroup(group);
     engine.addFixtureGroup(ledbarGroup);
-    // engine.addToGroup(0, {101, 201, 102, 103, 104, 105, 106});
-    // engine.addToGroup(1, {101, 201});
+    engine.addToGroup(0, {101, 201, 102, 103, 104, 105, 106});
+    engine.addToGroup(1, {101, 201});
     //
     //
-    for (auto color : group.getParameters(Parameters::ParameterTypes::COLOR))
+    for (auto color : engine.getFixtureGroup(0).getParameters(Parameters::ParameterTypes::COLOR))
     {
-    color->setValue("B", 100.f);
+        color->setValue("B", 100.f);
     }
 
-    for (auto param : ledbarGroup.getParameters(Parameters::ParameterTypes::COLOR)) {
-    param->setValue("R", 25.f);
+    for (auto param : engine.getFixtureGroup(1).getParameters(Parameters::ParameterTypes::COLOR)) {
+        param->setValue("R", 25.f);
     }
 
 

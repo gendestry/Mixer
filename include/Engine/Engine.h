@@ -41,12 +41,12 @@ public:
 
         for (uint16_t i = 0; i < amount; i++)
         {
-            // std::shared_ptr<DMX::Fixture> fix = std::make_shared<DMX::Fixture>(fixture);
+            std::shared_ptr<DMX::Fixture> fix = std::make_shared<DMX::Fixture>(fixture);
 
-            fixture.id = fid;
-            // m_fixtures[fid] = fixture;
+            fix->id = fid;
+            m_fixtures[fid] = fix;
             m_usedFids.insert(fid++);
-            m_universes[universe].addFixture(fixture, start);
+            m_universes[universe].addFixture(fix, start);
         }
     }
 
@@ -55,15 +55,15 @@ public:
         m_groups.push_back(fixtureGroup);
     }
 
-    // void addToGroup(uint16_t index, const std::vector<uint16_t>& fids)
-    // {
-    //     // TODO: check index
-    //     auto group = m_groups[index];
-    //     for (auto& fid : fids)
-    //     {
-    //         group += m_fixtures[fid];
-    //     }
-    // }
+    void addToGroup(uint16_t index, const std::vector<uint16_t>& fids)
+    {
+        // TODO: check index
+        auto group = m_groups[index];
+        for (auto& fid : fids)
+        {
+            group += m_fixtures[fid];
+        }
+    }
 
     DMX::Universe& getUniverse(uint8_t universe)
     {

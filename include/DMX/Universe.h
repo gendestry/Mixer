@@ -31,9 +31,9 @@ namespace DMX
         {
         }
 
-        void addFixture(Fixture& fix, std::optional<uint32_t> start = std::nullopt) {
+        void addFixture(std::shared_ptr<Fixture> fix, std::optional<uint32_t> start = std::nullopt) {
             this->add(fix, start);
-            m_fixturesByName[fix.name].push_back(m_fragments.back());
+            m_fixturesByName[fix->name].push_back(m_fragments.back());
         }
 
         // void addMultiple(std::shared_ptr<Fixture> fragment, uint16_t amount, std::optional<uint16_t> start = std::nullopt)
