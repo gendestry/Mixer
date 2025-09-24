@@ -15,6 +15,7 @@ class Engine
     std::unordered_map<uint8_t, DMX::Universe> m_universes;
     std::map<std::string, DMX::FixtureGroup> m_groups;
     std::map<uint16_t, std::shared_ptr<DMX::Fixture>> m_fixtures;
+    std::map<std::string, std::vector<std::shared_ptr<DMX::Fixture>>> m_fixturesByName;
     std::set<uint16_t> m_usedFids;
 
 public:
@@ -24,7 +25,11 @@ public:
     void setFixtureID(uint16_t currentFID, uint16_t newFID);
 
     [[nodiscard]] DMX::Universe& getUniverse(uint8_t universe);
+    [[nodiscard]] std::shared_ptr<DMX::Fixture> getFixtureByFID(uint16_t fid);
     [[nodiscard]] DMX::FixtureGroup& getFixtureGroup(const std::string& name);
+    [[nodiscard]] std::vector<std::shared_ptr<DMX::Fixture>>& getFixturesByName(const std::string& name);
+    [[nodiscard]] std::vector<uint16_t> getFixturesFIDByName(const std::string& name);
+
 
     [[nodiscard]] std::vector<std::shared_ptr<DMX::Parameters::Parameter>>& getGroupParameter(const std::string& name, DMX::Parameters::ParameterTypes paramType);
 };

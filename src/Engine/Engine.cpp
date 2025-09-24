@@ -32,6 +32,7 @@ std::vector<uint16_t> Engine::patch(DMX::Fixture& fixture, uint8_t universe, uin
         m_fixtures[fid] = fix;
         m_usedFids.insert(fid++);
         m_universes[universe].addFixture(fix, start);
+        m_fixturesByName[fix->name].push_back(fix);
     }
 
     return ret;
@@ -52,7 +53,25 @@ void Engine::setFixtureID(uint16_t currentFID, uint16_t newFID)
     m_usedFids.erase(currentFID);
     m_usedFids.insert(newFID);
     m_fixtures[currentFID]->id = newFID;
-    m_fixtures[newFID] = std::move(m_fixtures[currentFID]);
+    m_fixtures[newFID] = m_fixtures[currentFID];
+    // m_fixtures[currentFID]
+}
+
+std::vector<std::shared_ptr<DMX::Fixture>>& Engine::getFixturesByName(const std::string& name)
+{
+    return m_fixturesByName[name];
+}
+
+std::vector<uint16_t> Engine::getFixturesFIDByName(const std::string& name)
+{
+    auto& fixs = getFixturesByName(name);
+    std::vector<uint16_t> ret;
+    for (auto& fix : fixs)
+    {
+        ret.push_back(fix->id);
+    }
+
+    return ret;
 }
 
 // void removeFromGroup(const std::string& name, const std::vector<uint16_t>& fids)
@@ -68,6 +87,20 @@ DMX::Universe& Engine::getUniverse(uint8_t universe)
 {
     return m_universes[universe];
 }
+
+std::shared_ptr<DMX::Fixture> Engine::getFixtureByFID(uint16_t fid)
+{
+    for (auto& [key, value] : m_fixtures)
+    {
+        if (value->id == fid)
+        {
+            return value;
+        }
+    }
+
+    return nullptr;
+}
+
 
 DMX::FixtureGroup& Engine::getFixtureGroup(const std::string& name)
 {

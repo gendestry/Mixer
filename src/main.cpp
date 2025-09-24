@@ -22,20 +22,20 @@ int main()
     auto par_fids = engine.patch(par, 1, 5, std::nullopt, 102);
 
     engine.addToGroup("mix", {101, 201, 102, 103, 104, 105, 106});
-    engine.addToGroup("ledbars", {101, 201});
+    engine.addToGroup("ledbars", engine.getFixturesFIDByName("led"));
     engine.addToGroup("pars", par_fids);
 
 
-    // {
-    //     auto& params = engine.getGroupParameter("mix", Parameters::ParameterTypes::COLOR);
-    //     int i = 0;
-    //     for (auto param : params)
-    //     {
-    //         auto perc = i / static_cast<float>(params.size());
-    //         param->setValue("B", perc * i++);
-    //     }
-    // }
 
+    {
+        auto& params = engine.getGroupParameter("mix", Parameters::ParameterTypes::COLOR);
+        int i = 0;
+        for (auto param : params)
+        {
+            auto perc = ++i / static_cast<float>(params.size()) * 100.f;
+            param->setValue("B", 100.f - perc);
+        }
+    }
     {
         auto& params = engine.getGroupParameter("pars", Parameters::ParameterTypes::COLOR);
         int i = 0;
@@ -47,7 +47,21 @@ int main()
     }
 
 
+
+    engine.setFixtureID(201, 301);
+    {
+        auto params = engine.getFixtureByFID(301)->getParameters(Parameters::ParameterTypes::COLOR);
+        if (params.has_value())
+        {
+            for (auto f : params.value())
+            {
+                f->setValue("G", 100.f);
+            }
+        }
+    }
+
     std::cout << engine.getUniverse(1).describe();
+    std::cout << engine.getUniverse(2).describe();
 
     return 0;
 }
