@@ -14,7 +14,7 @@ file(GLOB_RECURSE SOURCES
 
 # Define the executable
 add_executable(${PROJECT_NAME} ${SOURCES}
-        include/Engine/Engine.h)
+        src/Engine/Engine.cpp)
 
 # Attach include directories to the target (after it's created)
 target_include_directories(${PROJECT_NAME}

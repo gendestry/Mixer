@@ -2,7 +2,7 @@
 // Created by Bobi on 9/22/25.
 //
 
-#include "DMX/FixtureGroup.h"
+#include "FixtureGroup.h"
 
 namespace DMX
 {

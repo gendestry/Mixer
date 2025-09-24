@@ -7,7 +7,7 @@
 #include <list>
 #include <unordered_map>
 
-#include "Fixture/Fixture.h"
+#include "../../include/DMX/Fixture/Fixture.h"
 #include "Helper/FragmentedStorage.h"
 namespace DMX
 {
@@ -31,22 +31,9 @@ namespace DMX
         {
         }
 
-        void addFixture(std::shared_ptr<Fixture> fix, std::optional<uint32_t> start = std::nullopt) {
-            this->add(fix, start);
-            m_fixturesByName[fix->name].push_back(m_fragments.back());
-        }
+        void addFixture(std::shared_ptr<Fixture> fix, std::optional<uint32_t> start = std::nullopt);
 
-        // void addMultiple(std::shared_ptr<Fixture> fragment, uint16_t amount, std::optional<uint16_t> start = std::nullopt)
-        // {
-        //     for (uint16_t i = 0; i < amount; i++)
-        //     {
-        //         addFixture(fragment, start);
-        //     }
-        // }
-
-        // [[nodiscard]] uint16_t numLights() const { return this->m.size(); }
-        // [[nodiscard]] uint16_t getUniverseID() const { return m_universeID; }
-
+        [[nodiscard]] uint16_t getUniverseID() const { return m_universeID; }
         [[nodiscard]] const std::shared_ptr<Fixture>& getLight(std::size_t index);
         // [[nodiscard]] std::vector<std::shared_ptr<Fixture>> getLights(std::string name);
 

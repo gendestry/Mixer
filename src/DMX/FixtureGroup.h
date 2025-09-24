@@ -7,7 +7,7 @@
 #include <vector>
 #include <list>
 
-#include "Fixture/Fixture.h"
+#include "DMX/Fixture/Fixture.h"
 
 namespace DMX
 {

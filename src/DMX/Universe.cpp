@@ -2,15 +2,17 @@
 // // Created by bobi on 15/09/2025.
 // //
 //
-#include "DMX/Universe.h"
+#include "Universe.h"
 #include <format>
 #include <sstream>
 #include <iostream>
 //
 namespace DMX {
-//
-//
 
+void Universe::addFixture(std::shared_ptr<Fixture> fix, std::optional<uint32_t> start) {
+    this->add(fix, start);
+    m_fixturesByName[fix->name].push_back(m_fragments.back());
+}
 const std::shared_ptr<Fixture>& Universe::getLight(std::size_t index)
 {
     auto it = m_fragments.begin();

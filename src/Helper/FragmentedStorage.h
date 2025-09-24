@@ -124,7 +124,7 @@ public:
             {
                 ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", colorDim, 1, start, colorItalic, colorReset);
             }
-            ss << std::format("{}[{:3}, {:3}]{} {} {} ({}){}\n", col, start + 1, start + fragment->size, colorItalic, fragment->name, fragment->id, fragment->size, colorReset);
+            ss << std::format("{}[{:3}, {:3}]{} \"{}\" FID: {} ({}){}\n", col, start + 1, start + fragment->size, colorItalic, fragment->name, fragment->id, fragment->size, colorReset);
             curr = start + fragment->size;
         }
 
