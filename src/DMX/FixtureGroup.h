@@ -17,7 +17,7 @@ namespace DMX
         std::string name;
         // uint16_t m_id;
 
-        std::unordered_map<Parameters::ParameterTypes, std::vector<std::shared_ptr<Parameters::Parameter>>> m_parameters;
+        std::unordered_map<Parameters::Type, std::vector<std::shared_ptr<Parameters::Parameter>>> m_parameters;
 
         void addParameters(const std::shared_ptr<Fixture>& fixtures);
         void addParameters(const std::list<std::shared_ptr<Fixture>>& fixtures);
@@ -45,7 +45,7 @@ namespace DMX
         // FixtureGroup &operator-=(FixtureGroup &other);
 
         const std::vector<std::shared_ptr<Fixture>> &operator()();
-        std::vector<std::shared_ptr<Parameters::Parameter>>& getParameters(Parameters::ParameterTypes ptype)
+        std::vector<std::shared_ptr<Parameters::Parameter>>& getParameters(Parameters::Type ptype)
         {
             return m_parameters[ptype];
         }

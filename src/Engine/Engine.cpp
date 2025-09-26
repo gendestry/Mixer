@@ -107,7 +107,7 @@ DMX::FixtureGroup& Engine::getFixtureGroup(const std::string& name)
     return m_groups[name];
 }
 
-std::vector<std::shared_ptr<DMX::Parameters::Parameter>>& Engine::getGroupParameter(const std::string& name, DMX::Parameters::ParameterTypes paramType)
+std::vector<std::shared_ptr<DMX::Parameters::Parameter>>& Engine::getGroupParameter(const std::string& name, DMX::Parameters::Type paramType)
 {
     return getFixtureGroup(name).getParameters(paramType);
 }

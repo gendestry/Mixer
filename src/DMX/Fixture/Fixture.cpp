@@ -50,7 +50,7 @@ namespace DMX
         }
     }
 
-    std::optional<std::list<std::shared_ptr<Parameters::Parameter>>> Fixture::getParameters(Parameters::ParameterTypes type)
+    std::optional<std::list<std::shared_ptr<Parameters::Parameter>>> Fixture::getParameters(Parameters::Type type)
     {
         if (m_indexes.contains(type))
         {
@@ -59,7 +59,7 @@ namespace DMX
         return std::nullopt;
     }
 
-    std::optional<std::list<std::shared_ptr<Parameters::Parameter>>> Fixture::operator[](Parameters::ParameterTypes type)
+    std::optional<std::list<std::shared_ptr<Parameters::Parameter>>> Fixture::operator[](Parameters::Type type)
     {
         return getParameters(type);
     }

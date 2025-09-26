@@ -31,5 +31,5 @@ public:
     [[nodiscard]] std::vector<uint16_t> getFixturesFIDByName(const std::string& name);
 
 
-    [[nodiscard]] std::vector<std::shared_ptr<DMX::Parameters::Parameter>>& getGroupParameter(const std::string& name, DMX::Parameters::ParameterTypes paramType);
+    [[nodiscard]] std::vector<std::shared_ptr<DMX::Parameters::Parameter>>& getGroupParameter(const std::string& name, DMX::Parameters::Type paramType);
 };

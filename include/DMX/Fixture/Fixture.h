@@ -17,10 +17,11 @@ namespace DMX
 class Fixture : public Utils::Fragment
 {
     std::list<std::shared_ptr<Parameters::Parameter>> m_Parameters;
-    std::unordered_map<Parameters::ParameterTypes, std::list<std::shared_ptr<Parameters::Parameter>>> m_indexes;
+    std::unordered_map<Parameters::Type, std::list<std::shared_ptr<Parameters::Parameter>>> m_indexes;
+    bool vDimRequired = true;
 
 public:
-
+    Fixture() = default;
     explicit Fixture(const std::string& name);
     Fixture(const Fixture& other);
 
@@ -31,6 +32,11 @@ public:
         m_Parameters.emplace_back(std::make_shared<T>(buffer, start));
         m_indexes[m_Parameters.back()->getType()].push_back(m_Parameters.back());
         size += m_Parameters.back()->getSize();
+
+        if (m_Parameters.back()->getType() == Parameters::Type::DIMMER)
+        {
+            vDimRequired = false;
+        }
     }
 
     template<typename T>
@@ -52,7 +58,7 @@ public:
         }
     }
 
-    template<Parameters::ParameterTypes TType>
+    template<Parameters::Type TType>
     [[nodiscard]] size_t paramsOfType() {
         if (m_indexes.contains(TType)) {
             return m_indexes[TType].size();
@@ -61,8 +67,29 @@ public:
         return 0;
     }
 
-    [[nodiscard]] std::optional<std::list<std::shared_ptr<Parameters::Parameter>>> getParameters(Parameters::ParameterTypes type);
-    [[nodiscard]] std::optional<std::list<std::shared_ptr<Parameters::Parameter>>> operator[](Parameters::ParameterTypes type);
+    void setIntensity(float percentage)
+    {
+        if (!m_indexes.contains(Parameters::Type::DIMMER))
+        {
+            auto colors = m_indexes[Parameters::Type::COLOR];
+            if (colors.size() == 0)
+            {
+                return;
+            }
+
+            for (auto color : colors)
+            {
+                color->setValue("R", percentage);
+                color->setValue("G", percentage);
+                color->setValue("B", percentage);
+                color->setValue("W", percentage);
+                color->setValue("A", percentage);
+            }
+        }
+    }
+
+    [[nodiscard]] std::optional<std::list<std::shared_ptr<Parameters::Parameter>>> getParameters(Parameters::Type type);
+    [[nodiscard]] std::optional<std::list<std::shared_ptr<Parameters::Parameter>>> operator[](Parameters::Type type);
 
     // [[nodiscard]] std::string getName() const;
     // [[nodiscard]] std::size_t getTotalSize() const;

@@ -4,17 +4,29 @@
 
 #include <iostream>
 #include "Engine/Engine.h"
+#include "Engine/FixtureLibrary.h"
 
 
 int main()
 {
     using namespace DMX;
-    Fixture ledbar("led");
-    ledbar.addMultiple<Parameters::ColorRGB>(10);
 
-    Fixture par("par");
-    par.add<Parameters::Dimmer>();
-    par.add<Parameters::ColorRGB>();
+    FixtureLibrary fixLib;
+    {
+        Fixture ledbar("led");
+        ledbar.addMultiple<Parameters::ColorRGB>(10);
+
+        Fixture par("par");
+        par.add<Parameters::Dimmer>();
+        par.add<Parameters::ColorRGB>();
+
+        fixLib.add(ledbar);
+        fixLib.add(par);
+    }
+
+
+    auto ledbar = fixLib.get("led").value();
+    auto par = fixLib.get("par").value();
 
     Engine engine;
     engine.patch(ledbar, 1, 1);;
@@ -25,10 +37,8 @@ int main()
     engine.addToGroup("ledbars", engine.getFixturesFIDByName("led"));
     engine.addToGroup("pars", par_fids);
 
-
-
     {
-        auto& params = engine.getGroupParameter("mix", Parameters::ParameterTypes::COLOR);
+        auto& params = engine.getGroupParameter("mix", Parameters::Type::COLOR);
         int i = 0;
         for (auto param : params)
         {
@@ -37,7 +47,7 @@ int main()
         }
     }
     {
-        auto& params = engine.getGroupParameter("pars", Parameters::ParameterTypes::COLOR);
+        auto& params = engine.getGroupParameter("ledbars", Parameters::Type::DIMMER);
         int i = 0;
         for (auto param : params)
         {
@@ -50,7 +60,7 @@ int main()
 
     engine.setFixtureID(201, 301);
     {
-        auto params = engine.getFixtureByFID(301)->getParameters(Parameters::ParameterTypes::COLOR);
+        auto params = engine.getFixtureByFID(301)->getParameters(Parameters::Type::COLOR);
         if (params.has_value())
         {
             for (auto f : params.value())

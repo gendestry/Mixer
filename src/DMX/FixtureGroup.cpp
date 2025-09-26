@@ -10,30 +10,30 @@ namespace DMX
     {
         using namespace Parameters;
 
-        auto colorParams = fixture->getParameters(ParameterTypes::COLOR);
+        auto colorParams = fixture->getParameters(Type::COLOR);
         if (colorParams.has_value())
         {
             for (auto& param : colorParams.value())
             {
-                m_parameters[ParameterTypes::COLOR].push_back(param);
+                m_parameters[Type::COLOR].push_back(param);
             }
         }
 
-        auto dimmerParams = fixture->getParameters(ParameterTypes::DIMMER);
+        auto dimmerParams = fixture->getParameters(Type::DIMMER);
         if (dimmerParams.has_value())
         {
             for (auto& param : dimmerParams.value())
             {
-                m_parameters[ParameterTypes::DIMMER].push_back(param);
+                m_parameters[Type::DIMMER].push_back(param);
             }
         }
 
-        auto positionParams = fixture->getParameters(ParameterTypes::POSITION);
+        auto positionParams = fixture->getParameters(Type::POSITION);
         if (positionParams.has_value())
         {
             for (auto& param : positionParams.value())
             {
-                m_parameters[ParameterTypes::POSITION].push_back(param);
+                m_parameters[Type::POSITION].push_back(param);
             }
         }
     }

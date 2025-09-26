@@ -28,12 +28,12 @@ enum class DimmerType
 
 using FieldTypes = std::variant<ColorType, PositionType, DimmerType>;
 
-enum class ParameterTypes
+enum class Type
 {
-    NONE,
-    DIMMER,
-    COLOR,
-    POSITION,
+    NONE = 0x0,
+    DIMMER = 1U << 0U,
+    COLOR = 1U << 1U,
+    POSITION = 1U << 2U,
 };
 
 
@@ -43,7 +43,7 @@ protected:
     // public:
     uint8_t* m_bytes = nullptr;
     uint32_t m_baseOffset;
-    ParameterTypes m_type;
+    Type m_type;
     std::size_t m_size;
     uint8_t m_bytes_per_type;
     std::unordered_map<std::string, uint16_t> m_offsets;
@@ -51,13 +51,13 @@ protected:
     std::vector<std::string> m_names;
 
 
-    [[nodiscard]] static std::string parameterTypesToString(ParameterTypes t);
+    [[nodiscard]] static std::string parameterTypesToString(Type t);
     [[nodiscard]] static std::string fieldTypeToString(FieldTypes field);
 public:
     Parameter(uint8_t* bytes, uint32_t baseOffset);
-    explicit Parameter(uint8_t* uni, uint32_t baseOffset, uint8_t bytesPerType, ParameterTypes type, std::size_t size);
+    explicit Parameter(uint8_t* uni, uint32_t baseOffset, uint8_t bytesPerType, Type type, std::size_t size);
 
-    [[nodiscard]] ParameterTypes getType() const;
+    [[nodiscard]] Type getType() const;
     [[nodiscard]] std::size_t getSize() const;
 
     void setBuffer(uint8_t* bytes);

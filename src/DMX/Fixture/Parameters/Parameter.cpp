@@ -11,10 +11,10 @@
 namespace DMX::Parameters
 {
     Parameter::Parameter(uint8_t* bytes, uint32_t baseOffset)
-        : m_type(ParameterTypes::NONE), m_bytes(bytes), m_baseOffset(baseOffset), m_size(0)
+        : m_type(Type::NONE), m_bytes(bytes), m_baseOffset(baseOffset), m_size(0)
     {}
 
-    Parameter::Parameter(uint8_t* uni, uint32_t baseOffset, uint8_t bytesPerType, ParameterTypes type, std::size_t size)
+    Parameter::Parameter(uint8_t* uni, uint32_t baseOffset, uint8_t bytesPerType, Type type, std::size_t size)
         : m_bytes(uni), m_baseOffset(baseOffset), m_bytes_per_type(bytesPerType), m_type(type), m_size(size)
     {}
 
@@ -30,7 +30,7 @@ namespace DMX::Parameters
     //     throw std::out_of_range("Color does not exist");
     // }
 
-    ParameterTypes Parameter::getType() const { return m_type; }
+    Type Parameter::getType() const { return m_type; }
     std::size_t Parameter::getSize() const { return m_size; }
 
     void Parameter::setBuffer(uint8_t* bytes)
@@ -64,17 +64,17 @@ namespace DMX::Parameters
         return ss.str();
     }
 
-    std::string Parameter::parameterTypesToString(ParameterTypes t)
+    std::string Parameter::parameterTypesToString(Type t)
     {
         switch (t)
         {
-        case ParameterTypes::NONE:
+        case Type::NONE:
             return "NONE";
-        case ParameterTypes::DIMMER:
+        case Type::DIMMER:
             return "DIMMER";
-        case ParameterTypes::COLOR:
+        case Type::COLOR:
             return "COLOR";
-        case ParameterTypes::POSITION:
+        case Type::POSITION:
             return "POSITION";
         default:
             return "UNKNOWN";

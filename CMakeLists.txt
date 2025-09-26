@@ -14,7 +14,8 @@ file(GLOB_RECURSE SOURCES
 
 # Define the executable
 add_executable(${PROJECT_NAME} ${SOURCES}
-        src/Engine/Engine.cpp)
+        src/Engine/Engine.cpp
+        include/Engine/FixtureLibrary.h)
 
 # Attach include directories to the target (after it's created)
 target_include_directories(${PROJECT_NAME}
