@@ -26,9 +26,15 @@ namespace DMX
         std::unordered_map<std::string, std::list<std::shared_ptr<Fixture>>> m_fixturesByName;
 
     public:
-        explicit Universe(uint16_t universe = 1)
+        Universe() : m_universeID(0){}
+        explicit Universe(uint16_t universe)
             : m_universeID(universe)
         {
+        }
+
+        void setID(uint16_t universe)
+        {
+            m_universeID = universe;
         }
 
         void addFixture(std::shared_ptr<Fixture> fix, std::optional<uint32_t> start = std::nullopt);

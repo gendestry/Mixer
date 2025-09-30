@@ -49,6 +49,8 @@ namespace DMX
         {
             return m_parameters[ptype];
         }
+
+        const std::vector<std::shared_ptr<Fixture>>& get() const{return m_fixtures;}
     };
 
 }

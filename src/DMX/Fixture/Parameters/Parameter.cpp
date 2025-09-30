@@ -38,6 +38,19 @@ namespace DMX::Parameters
         m_bytes = bytes;
     }
 
+    void Parameter::multiplyValue(const std::string& key, float percentage)
+    {
+        if (m_offsets.contains(key))
+        {
+            const auto off = m_baseOffset + m_offsets[key];
+            const uint32_t p = static_cast<uint32_t>((percentage / 100.0f) * m_bytes[off]);
+            if (m_bytes_per_type == 1)
+            {
+                m_bytes[off] = static_cast<uint8_t>(p);
+            }
+        }
+    }
+
     void Parameter::setValue(const std::string& key, float percentage) {
         const uint32_t size = pow(2, m_bytes_per_type * 8) - 1;
         const uint32_t p = static_cast<uint32_t>((percentage / 100.0f) * size);

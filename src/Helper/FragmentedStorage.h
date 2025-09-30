@@ -14,6 +14,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "Printable.h"
 #include "Utils.h"
 
 namespace Utils
@@ -25,7 +26,7 @@ const std::string colorReset = "\x1B[0m";
 const std::string colorDim = "\x1B[2m";
 const std::string colorItalic = "\x1B[3m";
 
-struct Fragment
+struct Fragment : public Traits::Printable
 {
     uint32_t start = 0U;
     uint32_t size = 0U;
@@ -41,6 +42,14 @@ struct Fragment
 
     virtual void setStart(uint32_t st) { start = st; };
     virtual void setBuffer(uint8_t* buf) {buffer = buf;}
+
+    [[nodiscard]] std::string describe() const override
+    {
+        std::stringstream ss;
+        ss << "[" << id << "] \"" << name << "\": " << size << " bytes";
+        return ss.str();
+        // return std::format(R"({})", name);
+    }
 
 };
 
@@ -124,7 +133,7 @@ public:
             {
                 ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", colorDim, 1, start, colorItalic, colorReset);
             }
-            ss << std::format("{}[{:3}, {:3}]{} \"{}\" FID: {} ({}){}\n", col, start + 1, start + fragment->size, colorItalic, fragment->name, fragment->id, fragment->size, colorReset);
+            ss << std::format("{}[{:3}, {:3}]{} \"{}\" FID: {} ({} bytes){}\n", col, start + 1, start + fragment->size, colorItalic, fragment->name, fragment->id, fragment->size, colorReset);
             curr = start + fragment->size;
         }
 

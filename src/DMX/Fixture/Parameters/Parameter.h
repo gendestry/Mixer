@@ -7,6 +7,7 @@
 
 #include "Helper/Printable.h"
 #include <iostream>
+#include <memory>
 
 namespace DMX::Parameters
 {
@@ -34,6 +35,7 @@ enum class Type
     DIMMER = 1U << 0U,
     COLOR = 1U << 1U,
     POSITION = 1U << 2U,
+    VDIMMER = 1U << 3U
 };
 
 
@@ -49,6 +51,7 @@ protected:
     std::unordered_map<std::string, uint16_t> m_offsets;
     std::unordered_map<std::string, uint16_t> m_updatedOffset;
     std::vector<std::string> m_names;
+    std::vector<std::shared_ptr<Parameters::Parameter>> m_parameterNodes;
 
 
     [[nodiscard]] static std::string parameterTypesToString(Type t);
@@ -66,6 +69,12 @@ public:
         m_baseOffset = offset;
     }
 
+    void addParameterNode(std::shared_ptr<Parameters::Parameter> node)
+    {
+        m_parameterNodes.push_back(node);
+    }
+
+    void multiplyValue(const std::string& key, float percentage);
     void setValue(const std::string& key, float percentage);
     [[nodiscard]] uint8_t* getBuffer() const {return m_bytes;}
 

@@ -74,18 +74,18 @@ namespace DMX
     //     return size;
     // }
 
-    std::string Fixture::describe() const
-    {
-        std::stringstream ss;
-        ss << std::format("FID: {}, start: {}\n", id, start);
-        printf("%p\n", buffer);
-        for (auto& p : m_Parameters)
-        {
-            ss <<  p->describe();
-        }
-
-        return ss.str();
-    }
+    // std::string Fixture::describe() const
+    // {
+    //     std::stringstream ss;
+    //     ss << std::format("FID: {}, start: {}\n", id, start);
+    //     printf("%p\n", buffer);
+    //     for (auto& p : m_Parameters)
+    //     {
+    //         ss <<  p->describe();
+    //     }
+    //
+    //     return ss.str();
+    // }
 
     uint8_t* Fixture::getBytes() const { return buffer; }
 }

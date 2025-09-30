@@ -29,7 +29,7 @@ public:
     requires std::is_base_of_v<Parameters::Parameter, T>
     void add()
     {
-        m_Parameters.emplace_back(std::make_shared<T>(buffer, start));
+        m_Parameters.emplace_back(std::make_shared<T>(buffer, start + size));
         m_indexes[m_Parameters.back()->getType()].push_back(m_Parameters.back());
         size += m_Parameters.back()->getSize();
 
@@ -49,8 +49,14 @@ public:
         }
     }
 
+    [[nodiscard]] bool isVirtualDIMRequired() const
+    {
+        return vDimRequired;
+    }
+
     void setStart(uint32_t start) override;
     void setBuffer(uint8_t* buffer) override;
+    void setName(const std::string& newName) {name = newName;}
 
     void print() {
         for (auto param : m_Parameters) {
@@ -79,11 +85,11 @@ public:
 
             for (auto color : colors)
             {
-                color->setValue("R", percentage);
-                color->setValue("G", percentage);
-                color->setValue("B", percentage);
-                color->setValue("W", percentage);
-                color->setValue("A", percentage);
+                color->multiplyValue("R", percentage);
+                color->multiplyValue("G", percentage);
+                color->multiplyValue("B", percentage);
+                color->multiplyValue("W", percentage);
+                color->multiplyValue("A", percentage);
             }
         }
     }
@@ -95,7 +101,7 @@ public:
     // [[nodiscard]] std::size_t getTotalSize() const;
     [[nodiscard]] uint8_t* getBytes() const;
 
-    [[nodiscard]] std::string describe() const;
+    // [[nodiscard]] std::string describe() const;
 };
 
 }
