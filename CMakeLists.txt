@@ -14,10 +14,10 @@ file(GLOB_RECURSE SOURCES
 
 # Define the executable
 add_executable(${PROJECT_NAME} ${SOURCES}
-        src/Engine/Engine.cpp
-        include/Engine/FixtureLibrary.h
-        src/DMX/Fixture/Parameters/VDimmerParameter.h)
-
+        src/Helper/Curve.h
+        src/Command/CommandInterface.h
+        src/Command/CommandExecutor.h
+        src/Effect/Effect.h)
 # Attach include directories to the target (after it's created)
 target_include_directories(${PROJECT_NAME}
         PUBLIC

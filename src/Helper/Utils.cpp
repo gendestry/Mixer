@@ -144,39 +144,6 @@ namespace Utils
                 static_cast<int>(b * 255.0f)};
     }
 
-    std::vector<float> getSegments(int numSegments, int segmentSize, int totalSize, int offset, SegmentOptions opt)
-    {
-        std::vector<float> segments(totalSize, 0.0f);
-
-        for (int i = 0; i < numSegments; i++)
-        {
-            int tail = (((int)(totalSize / numSegments) * i) + offset) % totalSize;
-            for (int j = 0; j < segmentSize; j++)
-            {
-                int index = (tail + j) % totalSize;
-                float step = (j / (float)(segmentSize - 1.f));
-                if (opt == Sin)
-                {
-                    segments[index] = sin(M_PI * step);
-                }
-                else if (opt == Saw)
-                {
-                    segments[index] = step;
-                }
-                else if (opt == InvSaw)
-                {
-                    segments[index] = 1.0f - step;
-                }
-                else
-                {
-                    segments[index] = 1.0f;
-                }
-            }
-        }
-
-        return segments;
-    }
-
     std::vector<std::vector<int>> getGradient(int numElements, std::vector<std::vector<int>> colors, std::vector<float> percentages)
     {
         if (percentages.size() == 0)
