@@ -62,6 +62,7 @@ namespace DMX
 
     void FixtureGroup::add(const std::shared_ptr<DMX::Fixture>& fixture)
     {
+        m_usedUniverses.insert(fixture->m_universe);
         m_fixtures.push_back(fixture);
         addParameters(fixture);
     }
@@ -69,6 +70,10 @@ namespace DMX
     void FixtureGroup::add(const std::list<std::shared_ptr<DMX::Fixture>>& fixs)
     {
         m_fixtures.insert(m_fixtures.end(), fixs.begin(), fixs.end());
+        for(auto fix : fixs)
+        {
+            m_usedUniverses.insert(fix->m_universe);
+        }
         addParameters(fixs);
     }
 
@@ -94,6 +99,7 @@ namespace DMX
     FixtureGroup& FixtureGroup::operator+=(const std::shared_ptr<DMX::Fixture>& fixture)
     {
         this->m_fixtures.push_back(fixture);
+        this->m_usedUniverses.insert(fixture->m_universe);
         addParameters(fixture);
         return *this;
     }
@@ -101,6 +107,10 @@ namespace DMX
     FixtureGroup& FixtureGroup::operator+=(const std::list<std::shared_ptr<DMX::Fixture>> &fixtures)
     {
         this->m_fixtures.insert(this->m_fixtures.end(), fixtures.begin(), fixtures.end());
+        for(auto fix : fixtures)
+        {
+            this->m_usedUniverses.insert(fix->m_universe);
+        }
         addParameters(fixtures);
         return *this;
     }
@@ -109,6 +119,10 @@ namespace DMX
     {
         auto otherLights = other.m_fixtures;
         this->m_fixtures.insert(this->m_fixtures.end(), otherLights.begin(), otherLights.end());
+        for(auto fix : otherLights)
+        {
+            this->m_usedUniverses.insert(fix->m_universe);
+        }
         addParameters(other.m_fixtures);
         return *this;
     }

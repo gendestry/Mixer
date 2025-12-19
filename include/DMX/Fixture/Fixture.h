@@ -19,8 +19,10 @@ class Fixture : public Utils::Fragment
     std::list<std::shared_ptr<Parameters::Parameter>> m_Parameters;
     std::unordered_map<Parameters::Type, std::list<std::shared_ptr<Parameters::Parameter>>> m_indexes;
     bool vDimRequired = true;
-
+    
 public:
+    uint8_t m_universe;
+    
     Fixture() = default;
     explicit Fixture(const std::string& name);
     Fixture(const Fixture& other);

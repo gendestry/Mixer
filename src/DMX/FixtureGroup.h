@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <list>
+#include <set>
 
 #include "DMX/Fixture/Fixture.h"
 
@@ -14,6 +15,7 @@ namespace DMX
     class FixtureGroup
     {
         std::vector<std::shared_ptr<Fixture>> m_fixtures;
+        std::set<uint8_t> m_usedUniverses;
         std::string name;
         // uint16_t m_id;
 
@@ -34,6 +36,7 @@ namespace DMX
         const std::vector<std::shared_ptr<Fixture>>& get();
 
         [[nodiscard]] size_t size() const;
+        [[nodiscard]] const std::set<uint8_t>& getUsedUniverses() const { return m_usedUniverses; };
 
         FixtureGroup &operator=(const std::vector<std::shared_ptr<Fixture>> &fixtures);
 

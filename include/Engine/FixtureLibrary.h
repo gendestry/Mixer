@@ -57,6 +57,8 @@ public:
         {
             DMX::Fixture fixture;
             uint16_t i = 0U;
+            bool isNumber = true;
+            uint16_t number = 0;
             for (auto word : std::views::split(line, ','))
             {
                 std::string w(word.begin(), word.end());
@@ -67,15 +69,27 @@ public:
                 }
                 else
                 {
-                    if (!addFixtureParameter(fixture, w))
+                    if(isNumber)
                     {
-                        throw std::runtime_error("Failed to add fixture parameter: " + w);
+                        number = std::stoi(w);    
                     }
+                    else
+                    {
+                        for(uint16_t j = 0; j < number; j++)
+                        {
+                            if (!addFixtureParameter(fixture, w))
+                            {
+                                throw std::runtime_error("Failed to add fixture parameter: " + w);
+                            }
+                        }
+                    }
+                    isNumber = !isNumber;
+                    
                 }
                 i++;
             }
 
-            std::cout << fixture.name << fixture.isVirtualDIMRequired() << std::endl;
+            // std::cout << fixture.name << fixture.isVirtualDIMRequired() << std::endl;
 
             if (fixture.isVirtualDIMRequired())
             {

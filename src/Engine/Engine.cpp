@@ -3,6 +3,7 @@
 //
 
 #include "Engine/Engine.h"
+#include <iostream>
 
 #include "DMX/Fixture/Parameters/VDimmerParameter.h"
 
@@ -41,13 +42,13 @@ std::vector<uint16_t> Engine::patch(DMX::Fixture& fixture, uint8_t universe, uin
         throw std::runtime_error("FIDS are in use");
     }
 
-
     for (uint16_t i = 0; i < amount; i++)
     {
         std::shared_ptr<DMX::Fixture> fix = std::make_shared<DMX::Fixture>(fixture);
 
         ret.push_back(fid);
         fix->id = fid;
+        fix->m_universe = universe;
         m_fixtures[fid] = fix;
         m_usedFids.insert(fid++);
         m_universes[universe].addFixture(fix, start);
@@ -55,6 +56,13 @@ std::vector<uint16_t> Engine::patch(DMX::Fixture& fixture, uint8_t universe, uin
         m_fixturesByName[fix->name].push_back(fix);
     }
 
+    if(!m_senders.contains(universe))
+    {
+        SacnSender* sender = new SacnSender(universe);
+        sender->setBuffer(m_universes[universe].getBytes());
+        m_senders[universe] = sender;
+
+    }
 
     return ret;
 }
@@ -77,6 +85,27 @@ void Engine::setFixtureID(uint16_t currentFID, uint16_t newFID)
     m_fixtures[newFID] = m_fixtures[currentFID];
     // m_fixtures[currentFID
 }
+
+void Engine::addDirtyUniverse(std::string group)
+{
+    const auto& groupUni = m_groups[group].getUsedUniverses();
+    m_dirtyUniverses.insert(groupUni.begin(), groupUni.end());
+}
+
+void Engine::clearDirtyUniverses()
+{
+    m_dirtyUniverses.clear();
+}
+
+void Engine::update()
+{
+    for(auto& d : m_dirtyUniverses)
+    {
+        m_senders[d]->send();
+    }
+}
+
+
 
 std::vector<std::shared_ptr<DMX::Fixture>>& Engine::getFixturesByName(const std::string& name)
 {

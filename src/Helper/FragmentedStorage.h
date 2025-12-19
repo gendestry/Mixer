@@ -13,18 +13,14 @@
 #include <optional>
 #include <type_traits>
 #include <vector>
+#include <iostream>
 
 #include "Printable.h"
 #include "Utils.h"
+#include "Colors.h"
 
 namespace Utils
 {
-const std::string colorGreen = "\x1B[32m";
-const std::string colorYellow = "\x1B[33m";
-const std::string colorBlue = "\x1B[34m";
-const std::string colorReset = "\x1B[0m";
-const std::string colorDim = "\x1B[2m";
-const std::string colorItalic = "\x1B[3m";
 
 struct Fragment : public Traits::Printable
 {
@@ -71,10 +67,10 @@ protected:
 
     [[nodiscard]] std::string nextColor(int index) const
     {
-        std::vector<float> colorVecHsv = {110.0f, 0.5f, 0.8f};
-        colorVecHsv[0] = std::fmod(colorVecHsv[0] + (m_bytesPatched[index] * 65), 360.0f);
-        const auto colorVec = hsvToRgb(colorVecHsv);
-        return colorByRGB(colorVec[0], colorVec[1], colorVec[2], true);
+        Colors::HSV initColor (110.0f, 0.5f, 0.8f);
+        initColor.h = std::fmod(initColor.h + (m_bytesPatched[index] * 65), 360.0f);
+        auto colorVec = Colors::hsvToRgb(initColor);
+        return Colors::colorByRGB(colorVec, true);
     }
 
     void add(std::shared_ptr<T> newFragment, const std::optional<uint32_t> start = std::nullopt) {
@@ -120,6 +116,11 @@ public:
         return m_fragments.size();
     }
 
+    [[nodiscard]] uint8_t* getBytes()
+    {
+        return m_buffer.data();
+    }
+
     [[nodiscard]] std::string fragmentsToString() const
     {
         std::stringstream ss;
@@ -131,15 +132,15 @@ public:
             col = nextColor(start);
             if (curr != start)
             {
-                ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", colorDim, 1, start, colorItalic, colorReset);
+                ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", Colors::colorDim, 1, start, Colors::colorItalic, Colors::colorReset);
             }
-            ss << std::format("{}[{:3}, {:3}]{} \"{}\" FID: {} ({} bytes){}\n", col, start + 1, start + fragment->size, colorItalic, fragment->name, fragment->id, fragment->size, colorReset);
+            ss << std::format("{}[{:3}, {:3}]{} \"{}\" FID: {} ({} bytes){}\n", col, start + 1, start + fragment->size, Colors::colorItalic, fragment->name, fragment->id, fragment->size, Colors::colorReset);
             curr = start + fragment->size;
         }
 
         if (curr != TSize - 1)
         {
-            ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", colorDim, curr + 1, TSize, colorItalic, colorReset);
+            ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", Colors::colorDim, curr + 1, TSize, Colors::colorItalic, Colors::colorReset);
         }
         return ss.str();
     }
@@ -166,13 +167,13 @@ public:
             ss << std::endl;
         };
 
-        ss << colorItalic;
+        ss << Colors::colorItalic;
         for (int i = 0; i < cond; i++)
         {
             static const std::string hex = "0123456789ABCDEF";
             ss << "0x" << hex[i] << "  ";
         }
-        ss << colorReset << std::endl;
+        ss << Colors::colorReset << std::endl;
 
         printSeperator();
 
@@ -189,10 +190,10 @@ public:
             }
             else
             {
-                col = colorReset + colorDim + colorReset;
+                col = Colors::colorReset + Colors::colorDim + Colors::colorReset;
             }
 
-            ss << col << Utils::padByte(bytes[i], 3) << colorReset << "  ";
+            ss << col << Utils::padByte(bytes[i], 3) << Colors::colorReset << "  ";
         }
         ss << std::endl;
 

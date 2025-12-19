@@ -7,8 +7,10 @@
 #include <list>
 #include <unordered_map>
 
-#include "../../include/DMX/Fixture/Fixture.h"
+#include "DMX/Fixture/Fixture.h"
 #include "Helper/FragmentedStorage.h"
+// #include "Helper/SacnSender.h"
+
 namespace DMX
 {
     struct Interval
@@ -24,6 +26,7 @@ namespace DMX
     {
         uint16_t m_universeID;
         std::unordered_map<std::string, std::list<std::shared_ptr<Fixture>>> m_fixturesByName;
+
 
     public:
         Universe() : m_universeID(0){}
