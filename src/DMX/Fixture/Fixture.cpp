@@ -88,4 +88,9 @@ namespace DMX
     // }
 
     uint8_t* Fixture::getBytes() const { return buffer; }
+
+    std::string Fixture::toString() const
+    {
+        return "";
+    }
 }

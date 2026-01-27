@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <vector>
+#include <ranges>
 
 namespace Utils
 {
@@ -60,6 +62,12 @@ namespace Utils
 
         return values;
     }
+
+    const std::vector<uint16_t> make_range(uint16_t start, uint16_t end)
+    {
+        auto view = std::ranges::iota_view(start, end); // [start, end)
+        return std::vector<uint16_t>(view.begin(), view.end());
+    };
 
     // std::vector<float> rgbToHsv(std::vector<int> rgb)
     // {
@@ -163,10 +171,10 @@ namespace Utils
     // }
 
     // Generate gradient
-    // std::vector<std::vector<int>> getGradient(int numElements, std::vector<std::vector<int>> colors, std::vector<float> percentages) 
+    // std::vector<std::vector<int>> getGradient(int numElements, std::vector<std::vector<int>> colors, std::vector<float> percentages)
     // {
     //     std::vector<HSV> hsvColors;
-    //     for (auto& c : colors) 
+    //     for (auto& c : colors)
     //     {
     //         hsvColors.push_back(rgbToHsv(c));
     //     }
@@ -174,12 +182,12 @@ namespace Utils
     //     std::vector<std::vector<int>> gradient;
     //     gradient.resize(numElements);
 
-    //     for (int i = 0; i < numElements; ++i) 
+    //     for (int i = 0; i < numElements; ++i)
     //     {
     //         float t = (float)i / (numElements - 1);
     //         int segment = 0;
 
-    //         while (segment < percentages.size() - 1 && t > percentages[segment + 1]) 
+    //         while (segment < percentages.size() - 1 && t > percentages[segment + 1])
     //         {
     //             segment++;
     //         }
@@ -187,7 +195,7 @@ namespace Utils
     //         float localT = (t - percentages[segment]) / (percentages[segment + 1] - percentages[segment]);
     //         gradient[i] = hsvToRgb(lerpHsv(hsvColors[segment], hsvColors[segment + 1], localT));
     //     }
-        
+
     //     return gradient;
     // }
 
@@ -220,7 +228,7 @@ namespace Utils
 
     //     // percentages[0] /= 2.f;
     //     // percentages.push_back(percentages[0]);
-        
+
     //     // for (int i = 0; i < colors.size() - 1; i++)
     //     // {
     //     //     float percentage = percentages[i];

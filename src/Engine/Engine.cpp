@@ -7,88 +7,59 @@
 
 #include "DMX/Fixture/Parameters/VDimmerParameter.h"
 
-Engine::Engine(const std::string& filePath)
+Engine::Engine()
 {
-    m_fixtureLibrary.readFromFile(filePath);
+    m_patch.readFixtureLib("testfile.txt");
 }
 
-std::vector<uint16_t> Engine::patch(const std::string& fixtureName, uint8_t universe, uint16_t amount, std::optional<uint16_t> start, std::optional<uint16_t> startFID)
+Engine::Engine(const std::string &filePath)
 {
-    auto fixture = m_fixtureLibrary.get(fixtureName);
-    if (fixture.has_value())
-    {
-        return patch(fixture.value(), universe, amount, start, startFID);
-    }
-
-    throw std::runtime_error("Could not find fixture " + fixtureName);
+    m_patch.readFixtureLib(filePath);
 }
 
-std::vector<uint16_t> Engine::patch(DMX::Fixture& fixture, uint8_t universe, uint16_t amount, std::optional<uint16_t> start, std::optional<uint16_t> startFID)
+void Engine::setIP(std::string ip)
 {
-    uint16_t fid = startFID.has_value() ? startFID.value() : universe * 100 + 1;
-    std::vector<uint16_t> ret;
-    bool canUseFid = true;
-    for (uint16_t i = 0; i < amount; ++i)
-    {
-        if (m_usedFids.contains(fid + i))
-        {
-            canUseFid = false;
-            break;
-        }
-    }
+    m_output.setIP(ip);
+}
 
-    if (!canUseFid)
-    {
-        throw std::runtime_error("FIDS are in use");
-    }
-
-    for (uint16_t i = 0; i < amount; i++)
-    {
-        std::shared_ptr<DMX::Fixture> fix = std::make_shared<DMX::Fixture>(fixture);
-
-        ret.push_back(fid);
-        fix->id = fid;
-        fix->m_universe = universe;
-        m_fixtures[fid] = fix;
-        m_usedFids.insert(fid++);
-        m_universes[universe].addFixture(fix, start);
-        m_universes[universe].setID(universe);
-        m_fixturesByName[fix->name].push_back(fix);
-    }
-
-    if(!m_senders.contains(universe))
-    {
-        SacnSender* sender = new SacnSender(universe);
-        sender->setBuffer(m_universes[universe].getBytes());
-        m_senders[universe] = sender;
-
-    }
-
+std::vector<uint16_t> Engine::patch(const std::string &fixtureName, uint8_t universe, uint16_t amount, std::optional<uint16_t> start, std::optional<uint16_t> startFID)
+{
+    auto ret = m_patch.patch(fixtureName, universe, amount, start, std::move(startFID));
+    m_output.check(universe, m_patch.getUniverse(universe).getBytes());
     return ret;
 }
 
-void Engine::addToGroup(const std::string& name, const std::vector<uint16_t>& fids)
+std::vector<uint16_t> Engine::patch(DMX::Fixture &fixture, uint8_t universe, uint16_t amount, std::optional<uint16_t> start, std::optional<uint16_t> startFID)
+{
+    auto ret = m_patch.patch(fixture, universe, amount, start, std::move(startFID));
+    m_output.check(universe, m_patch.getUniverse(universe).getBytes());
+    return ret;
+}
+
+void Engine::addToGroup(const std::string &name, const std::vector<uint16_t> &fids)
 {
     // TODO: check index
-    auto& group = m_groups[name];
+    auto& fixs = m_patch.getFixtures();
+    auto &group = m_groups[name];
     for (auto fid : fids)
     {
-        group += m_fixtures[fid];
+        group += fixs[fid];
     }
 }
 
-void Engine::setFixtureID(uint16_t currentFID, uint16_t newFID)
+void Engine::addToGroup(const std::string &name, uint16_t startFid, uint16_t endFid)
 {
-    m_usedFids.erase(currentFID);
-    m_usedFids.insert(newFID);
-    m_fixtures[currentFID]->id = newFID;
-    m_fixtures[newFID] = m_fixtures[currentFID];
-    // m_fixtures[currentFID
+    addToGroup(name, Utils::make_range(startFid, endFid));
+}
+
+void Engine::addToGroup(const std::string &name, const std::string &otherName)
+{
+    m_groups[name] += m_groups[otherName];
 }
 
 void Engine::addDirtyUniverse(std::string group)
 {
-    const auto& groupUni = m_groups[group].getUsedUniverses();
+    const auto &groupUni = m_groups[group].getUsedUniverses();
     m_dirtyUniverses.insert(groupUni.begin(), groupUni.end());
 }
 
@@ -97,31 +68,13 @@ void Engine::clearDirtyUniverses()
     m_dirtyUniverses.clear();
 }
 
+void Engine::progColorEffect(std::string group)
+{
+}
+
 void Engine::update()
 {
-    for(auto& d : m_dirtyUniverses)
-    {
-        m_senders[d]->send();
-    }
-}
-
-
-
-std::vector<std::shared_ptr<DMX::Fixture>>& Engine::getFixturesByName(const std::string& name)
-{
-    return m_fixturesByName[name];
-}
-
-std::vector<uint16_t> Engine::getFixturesFIDByName(const std::string& name)
-{
-    auto& fixs = getFixturesByName(name);
-    std::vector<uint16_t> ret;
-    for (auto& fix : fixs)
-    {
-        ret.push_back(fix->id);
-    }
-
-    return ret;
+    m_output.update(m_dirtyUniverses);
 }
 
 // void removeFromGroup(const std::string& name, const std::vector<uint16_t>& fids)
@@ -133,54 +86,35 @@ std::vector<uint16_t> Engine::getFixturesFIDByName(const std::string& name)
 //     }
 // }
 
-DMX::Universe& Engine::getUniverse(uint8_t universe)
-{
-    return m_universes[universe];
-}
-
-std::shared_ptr<DMX::Fixture> Engine::getFixtureByFID(uint16_t fid)
-{
-    for (auto& [key, value] : m_fixtures)
-    {
-        if (value->id == fid)
-        {
-            return value;
-        }
-    }
-
-    return nullptr;
-}
-
-
-DMX::FixtureGroup& Engine::getFixtureGroup(const std::string& name)
+DMX::FixtureGroup &Engine::getFixtureGroup(const std::string &name)
 {
     return m_groups[name];
 }
 
-std::vector<std::shared_ptr<DMX::Parameters::Parameter>>& Engine::getGroupParameter(const std::string& name, DMX::Parameters::Type paramType)
+std::vector<std::shared_ptr<DMX::Parameters::Parameter>> &Engine::getGroupParameter(const std::string &name, DMX::Parameters::Type paramType)
 {
     return getFixtureGroup(name).getParameters(paramType);
+}
+
+std::vector<std::shared_ptr<DMX::Parameters::Parameter>> &Engine::getGroupColorParameter(const std::string &name)
+{
+    return getFixtureGroup(name).getParameters(DMX::Parameters::Type::COLOR);
 }
 
 std::string Engine::describe() const
 {
     std::stringstream ss;
-    ss << m_fixtureLibrary.describe();
-
-    for (auto& [key, value] : m_groups)
+    for (auto &[key, value] : m_groups)
     {
         ss << "Fixture group: " << key << std::endl;
-        const auto& fixs = value.get();
+        const auto &fixs = value.get();
         for (auto fix : fixs)
         {
             ss << " - " << fix->describe() << std::endl;
         }
         ss << std::endl;
     }
-    ss << "\n[Universes]" << std::endl;
-    for (const auto& [_, value] : m_universes)
-    {
-        ss << value.describe();
-    }
+
+    ss << m_patch.describe();
     return ss.str();
 }

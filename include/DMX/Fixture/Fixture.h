@@ -10,11 +10,12 @@
 
 #include "Helper/FragmentedStorage.h"
 #include "Parameters/Parameters.h"
+#include "Traits/Serialize.h"
 
 namespace DMX
 {
 
-class Fixture : public Utils::Fragment
+class Fixture : public Utils::Fragment, Traits::Serializable
 {
     std::list<std::shared_ptr<Parameters::Parameter>> m_Parameters;
     std::unordered_map<Parameters::Type, std::list<std::shared_ptr<Parameters::Parameter>>> m_indexes;
@@ -102,6 +103,8 @@ public:
     // [[nodiscard]] std::string getName() const;
     // [[nodiscard]] std::size_t getTotalSize() const;
     [[nodiscard]] uint8_t* getBytes() const;
+
+    std::string toString() const override;
 
     // [[nodiscard]] std::string describe() const;
 };

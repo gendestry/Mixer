@@ -13,7 +13,11 @@ file(GLOB_RECURSE SOURCES
 )
 
 # Define the executable
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES}
+        include/Engine/Components/Patch.h
+        src/Engine/Components/Patch.cpp
+        include/Engine/Components/DMXOutput.h
+        src/Engine/Components/DMXOutput.cpp)
 
 # Attach include directories to the target (after it's created)
 target_include_directories(${PROJECT_NAME}

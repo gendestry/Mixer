@@ -8,15 +8,20 @@
 
 #include "Parameter.h"
 
+
 namespace DMX::Parameters
 {
     struct VDimmerParameter : public Parameter
     {
 
+        Parameter* m_colorParam;
         VDimmerParameter(uint8_t* bytes, uint32_t baseOffset): Parameter(nullptr, 0, 0, Type::VDIMMER, 0)
         {
             m_type = Type::VDIMMER;
         }
+
+        void bind()
+        {}
 
 
 
