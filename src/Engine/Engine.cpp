@@ -62,13 +62,15 @@ void Engine::clearDirtyUniverses()
     m_dirtyUniverses.clear();
 }
 
-void Engine::progColorEffect(std::string group)
-{
-}
-
 void Engine::update()
 {
+    for (Effect::Effect* effect : m_effects)
+    {
+        effect->update();
+    }
+
     m_output.update(m_dirtyUniverses);
+
     // clearDirtyUniverses();
 }
 

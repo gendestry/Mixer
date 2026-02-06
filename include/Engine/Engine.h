@@ -5,16 +5,19 @@
 #pragma once
 #include <cstdint>
 #include <set>
+#include <chrono>
 
 #include "DMX/FixtureGroup.h"
 #include "Components/DMXOutput.h"
 #include "Components/Patch.h"
 #include "Components/GroupManager.h"
 
+#include "Effect/Effect.h"
+
 class Engine : public Traits::Printable
 {
     std::set<uint8_t> m_dirtyUniverses;
-
+    std::vector<Effect::Effect*> m_effects;
     Components::Patch m_patch;
     Components::DMXOutput m_output;
     Components::GroupManager m_groupManager;
@@ -34,7 +37,33 @@ public:
     void addDirtyUniverse(const std::string& group);
     void clearDirtyUniverses();
 
-    void progColorEffect(std::string group);
+    // void addEffectColor(const std::string& groupName, const std::function<void(uint32_t, std::vector<std::shared_ptr<DMX::Parameters::Parameter>>&)>& func)
+    // {
+    //     Effect::Effect* effect = new Effect::ColorEffect(getFixtureGroup(groupName));
+    //     effect->setEffect(func);
+    //     m_effects.push_back(effect);
+    // }
+
+    Effect::ColorEffect* addColor(const std::string& groupName, Utils::Colors::RGB color)
+    {
+        Effect::Effect* effect = new Effect::ColorEffect(getFixtureGroup(groupName), color);
+        m_effects.push_back(effect);
+        return static_cast<Effect::ColorEffect*>(effect);
+    }
+
+    Effect::FXDimmerChase* addEffectDimmerChase(const std::string& groupName, Utils::Curve::Type curve = Utils::Curve::SINUSOID)
+    {
+        Effect::Effect* effect = new Effect::FXDimmerChase(getFixtureGroup(groupName), curve);
+        m_effects.push_back(effect);
+        return static_cast<Effect::FXDimmerChase*>(effect);
+    }
+
+    Effect::FX2Color* addEffect2Color(const std::string& groupName, Utils::Colors::RGB color1, Utils::Colors::RGB color2)
+    {
+        Effect::Effect* effect = new Effect::FX2Color(getFixtureGroup(groupName), color1, color2);
+        m_effects.push_back(effect);
+        return static_cast<Effect::FX2Color*>(effect);
+    }
 
     void update();
 

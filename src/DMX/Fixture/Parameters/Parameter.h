@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <cstdint>
 #include <vector>
+#include <optional>
 
 #include "Helper/Printable.h"
 #include <iostream>
@@ -76,6 +77,7 @@ public:
 
     void multiplyValue(const std::string& key, float percentage);
     void setValue(const std::string& key, float percentage);
+    std::optional<float> getValue(std::string key);
     [[nodiscard]] uint8_t* getBuffer() const {return m_bytes;}
 
     [[nodiscard]] std::string describe() const override;

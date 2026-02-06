@@ -104,9 +104,9 @@ namespace Utils
         }
 
         // Convert to 0-255 range
-        return {static_cast<uint8_t>(r * 255.0f),
+        return Utils::Colors::RGB(static_cast<uint8_t>(r * 255.0f),
                 static_cast<uint8_t>(g * 255.0f),
-                static_cast<uint8_t>(b * 255.0f)};
+                static_cast<uint8_t>(b * 255.0f));
     }
 
     std::string Colors::colorByRGB(uint8_t r, uint8_t g, uint8_t b, bool fg)
@@ -121,8 +121,15 @@ namespace Utils
         return std::format("\x1B[{}8;2;{};{};{}m", (fg ? 3 : 4), color.r, color.g, color.b);
     }
 
-    std::vector<Colors::RGB> Colors::makeGradient(const std::vector<Colors::RGB>& colors, const std::vector<float>& weights, int N)
+    std::vector<Colors::RGB> Colors::makeGradient(const std::vector<Colors::RGB>& colorss, const std::vector<float>& weightss, int N)
     {
+        auto colors = colorss;
+        auto weights = weightss;
+        colors.push_back(colorss.front());
+        float& w = weights[0];
+        w /= 2.f;
+        weights.push_back(w);
+
         if (colors.size() != weights.size())
             throw std::invalid_argument("Colors and weights must match.");
 

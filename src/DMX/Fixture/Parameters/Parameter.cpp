@@ -65,6 +65,24 @@ namespace DMX::Parameters
         }
     }
 
+    std::optional<float> Parameter::getValue(std::string key)
+    {
+        const uint32_t size = pow(2, m_bytes_per_type * 8) - 1;
+
+        if (m_offsets.contains(key))
+        {
+            auto off = m_baseOffset + m_offsets[key];
+            if (m_bytes_per_type == 1)
+            {
+                return (m_bytes[off] / 255.0f);
+            }
+        }
+
+        return std::optional<float>();
+
+    }
+
+
     std::string Parameter::describe() const
     {
         std::stringstream ss;

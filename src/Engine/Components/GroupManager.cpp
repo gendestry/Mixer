@@ -27,7 +27,7 @@ namespace Components
         m_groups[name] += m_groups[otherName];
     }
 
-    DMX::FixtureGroup &GroupManager::group(const std::string &name)
+    DMX::FixtureGroup& GroupManager::group(const std::string &name)
     {
         return m_groups[name];
     }

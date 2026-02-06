@@ -18,7 +18,7 @@ namespace Components
         void addToGroup(const std::string &name, const std::list<std::shared_ptr<DMX::Fixture>>& fixtures);
         void addToGroup(const std::string &name, const std::string &otherName);
 
-        DMX::FixtureGroup &group(const std::string &name);
+        DMX::FixtureGroup& group(const std::string &name);
 
         // [[nodiscard]]GroupManager& operator+= (const std::string& name) { m_groups}
         [[nodiscard]] std::string describe() const;

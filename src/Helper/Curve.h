@@ -31,6 +31,8 @@ public:
     void setType(const Type type) { m_type = type; update(); }
     void setLength(const uint32_t length) { m_length = length; update();}
     void setPeaks(const uint16_t peaks) { m_peaks = peaks; update();}
+
+    uint32_t getLength() const { return m_length; }
     // void init(Type type, uint16_t length, uint16_t peaks = 1U);
 
     float operator[] (std::size_t index) const;
