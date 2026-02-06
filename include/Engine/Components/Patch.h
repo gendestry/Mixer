@@ -9,6 +9,7 @@
 #include "DMX/Fixture/Fixture.h"
 #include "FixtureLibrary.h"
 #include <memory>
+#include <list>
 #include <map>
 #include <set>
 
@@ -36,6 +37,7 @@ namespace Components
         [[nodiscard]] DMX::Universe &getUniverse(uint8_t universe);
         [[nodiscard]] std::shared_ptr<DMX::Fixture> getFixtureByFID(uint16_t fid);
         [[nodiscard]] std::vector<std::shared_ptr<DMX::Fixture>> &getFixturesByName(const std::string &name);
+        [[nodiscard]] std::list<std::shared_ptr<DMX::Fixture>> getFixturesByFIDS(const std::vector<uint16_t>& fids);
         [[nodiscard]] std::vector<uint16_t> getFixturesFIDByName(const std::string &name);
 
         std::string describe() const;

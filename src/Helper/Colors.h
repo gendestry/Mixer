@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <vector>
 
 
 namespace Utils
@@ -20,6 +21,8 @@ namespace Utils
                 uint8_t rgb[3];
             };
 
+            float pr, pg, pb;
+
             RGB() = default;
 
             RGB(uint8_t red, uint8_t green, uint8_t blue)
@@ -27,6 +30,16 @@ namespace Utils
                 r = red;
                 g = green;
                 b = blue;
+
+                toPercentage();
+            }
+
+            RGB& toPercentage() {
+                pr = (static_cast<float>(r) / 255.0f) * 100.0f;
+                pg = (static_cast<float>(g) / 255.0f) * 100.0f;
+                pb = (static_cast<float>(b) / 255.0f) * 100.0f;
+
+                return *this;
             }
 
             uint8_t& operator[](uint8_t index)
@@ -80,6 +93,8 @@ namespace Utils
 
         static std::string colorByRGB(uint8_t r, uint8_t g, uint8_t b, bool fg);
         static std::string colorByRGB(const RGB& color, bool fg);
+        static std::vector<RGB> gradient(const RGB& color1, const RGB& color2);
+        static std::vector<RGB> makeGradient(const std::vector<RGB>& colors, const std::vector<float>& weights, int N);
 
         
         static const std::string colorGreen;

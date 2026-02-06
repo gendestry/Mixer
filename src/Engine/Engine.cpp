@@ -3,9 +3,6 @@
 //
 
 #include "Engine/Engine.h"
-#include <iostream>
-
-#include "DMX/Fixture/Parameters/VDimmerParameter.h"
 
 Engine::Engine()
 {
@@ -17,21 +14,21 @@ Engine::Engine(const std::string &filePath)
     m_patch.readFixtureLib(filePath);
 }
 
-void Engine::setIP(std::string ip)
+void Engine::setIP(const std::string& ip)
 {
     m_output.setIP(ip);
 }
 
 std::vector<uint16_t> Engine::patch(const std::string &fixtureName, uint8_t universe, uint16_t amount, std::optional<uint16_t> start, std::optional<uint16_t> startFID)
 {
-    auto ret = m_patch.patch(fixtureName, universe, amount, start, std::move(startFID));
+    auto ret = m_patch.patch(fixtureName, universe, amount, start, startFID);
     m_output.check(universe, m_patch.getUniverse(universe).getBytes());
     return ret;
 }
 
 std::vector<uint16_t> Engine::patch(DMX::Fixture &fixture, uint8_t universe, uint16_t amount, std::optional<uint16_t> start, std::optional<uint16_t> startFID)
 {
-    auto ret = m_patch.patch(fixture, universe, amount, start, std::move(startFID));
+    auto ret = m_patch.patch(fixture, universe, amount, start, startFID);
     m_output.check(universe, m_patch.getUniverse(universe).getBytes());
     return ret;
 }
@@ -39,12 +36,8 @@ std::vector<uint16_t> Engine::patch(DMX::Fixture &fixture, uint8_t universe, uin
 void Engine::addToGroup(const std::string &name, const std::vector<uint16_t> &fids)
 {
     // TODO: check index
-    auto& fixs = m_patch.getFixtures();
-    auto &group = m_groups[name];
-    for (auto fid : fids)
-    {
-        group += fixs[fid];
-    }
+    m_groupManager.addToGroup(name, m_patch.getFixturesByFIDS(fids));
+    addDirtyUniverse(name);
 }
 
 void Engine::addToGroup(const std::string &name, uint16_t startFid, uint16_t endFid)
@@ -54,12 +47,13 @@ void Engine::addToGroup(const std::string &name, uint16_t startFid, uint16_t end
 
 void Engine::addToGroup(const std::string &name, const std::string &otherName)
 {
-    m_groups[name] += m_groups[otherName];
+    m_groupManager.addToGroup(name, otherName);
+    addDirtyUniverse(name);
 }
 
-void Engine::addDirtyUniverse(std::string group)
+void Engine::addDirtyUniverse(const std::string& group)
 {
-    const auto &groupUni = m_groups[group].getUsedUniverses();
+    const auto &groupUni = m_groupManager[group].getUsedUniverses();
     m_dirtyUniverses.insert(groupUni.begin(), groupUni.end());
 }
 
@@ -75,6 +69,7 @@ void Engine::progColorEffect(std::string group)
 void Engine::update()
 {
     m_output.update(m_dirtyUniverses);
+    // clearDirtyUniverses();
 }
 
 // void removeFromGroup(const std::string& name, const std::vector<uint16_t>& fids)
@@ -88,7 +83,8 @@ void Engine::update()
 
 DMX::FixtureGroup &Engine::getFixtureGroup(const std::string &name)
 {
-    return m_groups[name];
+    return m_groupManager[name];
+    // return m_groups[name];
 }
 
 std::vector<std::shared_ptr<DMX::Parameters::Parameter>> &Engine::getGroupParameter(const std::string &name, DMX::Parameters::Type paramType)
@@ -104,16 +100,7 @@ std::vector<std::shared_ptr<DMX::Parameters::Parameter>> &Engine::getGroupColorP
 std::string Engine::describe() const
 {
     std::stringstream ss;
-    for (auto &[key, value] : m_groups)
-    {
-        ss << "Fixture group: " << key << std::endl;
-        const auto &fixs = value.get();
-        for (auto fix : fixs)
-        {
-            ss << " - " << fix->describe() << std::endl;
-        }
-        ss << std::endl;
-    }
+    ss << m_groupManager.describe();
 
     ss << m_patch.describe();
     return ss.str();

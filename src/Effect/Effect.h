@@ -2,7 +2,7 @@
 #include <functional>
 #include "DMX/FixtureGroup.h"
 #include "DMX/Fixture/Parameters/Parameters.h"
-#include "Curve.h"
+#include "../Helper/Curve.h"
 
 namespace Effect
 {

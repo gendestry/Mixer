@@ -101,6 +101,18 @@ namespace Components {
         return m_fixturesByName[name];
     }
 
+    std::list<std::shared_ptr<DMX::Fixture>> Patch::getFixturesByFIDS(const std::vector<uint16_t>& fids)
+    {
+        std::list<std::shared_ptr<DMX::Fixture>> ret;
+
+        for (auto fid : fids)
+        {
+            ret.push_back(m_fixtures[fid]);
+        }
+        return ret;
+    }
+
+
     std::vector<uint16_t> Patch::getFixturesFIDByName(const std::string &name)
     {
         auto &fixs = getFixturesByName(name);

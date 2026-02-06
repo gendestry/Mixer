@@ -4,11 +4,7 @@
 
 #pragma once
 #include <cstdint>
-#include <math.h>
-#include <stdexcept>
 #include <vector>
-
-#include "Helper/Utils.h"
 
 namespace Utils
 {
@@ -16,8 +12,10 @@ namespace Utils
 class Curve
 {
     std::vector<float> m_values;
-    std::size_t m_length;
+    uint32_t m_length;
     uint16_t m_peaks = 1;
+
+    void update();
 public:
     enum Type
     {
@@ -27,13 +25,12 @@ public:
         LINE
     } m_type;
 
-    Curve() = default;
-    // explicit Curve(Type type, uint16_t length, uint16_t peaks = 1U);
+    Curve() = delete;//default;
+    explicit Curve(Type type, uint16_t length, uint16_t peaks = 1U);
 
-    void setType(Type type) { m_type = type; }
-    void setLength(std::size_t length) { m_length = length; }
-    void setPeaks(uint16_t peaks) { m_peaks = peaks; }
-    void update();
+    void setType(const Type type) { m_type = type; update(); }
+    void setLength(const uint32_t length) { m_length = length; update();}
+    void setPeaks(const uint16_t peaks) { m_peaks = peaks; update();}
     // void init(Type type, uint16_t length, uint16_t peaks = 1U);
 
     float operator[] (std::size_t index) const;

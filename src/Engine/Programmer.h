@@ -1,7 +1,7 @@
 #pragma once
 #include "DMX/FixtureGroup.h"
 #include "Effect/Effect.h"
-#include "Effect/Curve.h"
+#include "../Helper/Curve.h"
 #include "DMX/Fixture/Parameters/Parameters.h"
 
 class Programmer

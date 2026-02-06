@@ -1,12 +1,16 @@
 #include "Curve.h"
+#include "Helper/Utils.h"
+#include <math.h>
+#include <stdexcept>
 
 namespace Utils
 {
-    // explicit Curve::Curve(Type type, uint16_t length, uint16_t peaks)
-    //     : m_length(length)
-    // {
+    Curve::Curve(Type type, uint16_t length, uint16_t peaks)
+    : m_type(type), m_length(length), m_peaks(peaks)
+    {
+        update();
     //     init(type, length, peaks);
-    // }
+    }
 
     void Curve::update()
     {
@@ -21,7 +25,8 @@ namespace Utils
             {
             case Type::SINUSOID:
             {
-                m_values[i] = std::sin(phase * M_PI);
+                constexpr double TWO_PI = M_PI;
+                m_values[i] = std::fabs(std::sin(lin * m_peaks * TWO_PI));
                 break;
             }
             case Type::TRIANGLE:
