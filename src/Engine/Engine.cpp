@@ -6,7 +6,7 @@
 
 Engine::Engine()
 {
-    m_patch.readFixtureLib("testfile.txt");
+    // m_patch.readFixtureLib("testfile.txt");
 }
 
 Engine::Engine(const std::string &filePath)

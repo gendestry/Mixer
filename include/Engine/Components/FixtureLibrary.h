@@ -14,6 +14,7 @@
 namespace Components {
     class FixtureLibrary : public Traits::Printable
     {
+        bool fileRead = false;
         std::unordered_map<std::string, DMX::Fixture> m_fixtures;
 
         static bool addFixtureParameter(DMX::Fixture& fixture, const std::string name)

@@ -16,6 +16,7 @@ void FixtureLibrary::add(DMX::Fixture&& fixture)
 }
 void FixtureLibrary::readFromFile(const std::string& path)
 {
+    fileRead = true;
     std::ifstream file;
     file.open(path);
 
