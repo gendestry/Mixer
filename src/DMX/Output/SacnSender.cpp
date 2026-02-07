@@ -1,4 +1,4 @@
-#include "../../../include/DMX/Output/SacnSender.h"
+#include "DMX/Output/SacnSender.h"
 #include <sys/socket.h>
 #include <unistd.h>
 #include <iostream>

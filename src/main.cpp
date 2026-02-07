@@ -8,34 +8,24 @@
 #include "Helper/Utils.h"
 #include "Helper/Colors.h"
 #include "Helper/Curve.h"
+#include "Helper/NetworkUtils.h"
 
 int main()
 {
-    using namespace DMX;
+     using namespace DMX;
 
-    Engine engine("testfile.txt");
-    engine.setIP("192.168.0.6");
+     Engine engine("testfile.txt");
+     engine.setIP(NetworkUtils::primaryIP());
+     // engine.setIP("192.168.0.52");
 
-    const auto fids1 = engine.patch("pixel", 8, 93);
-    const auto fids2 = engine.patch("pixel", 9, 120);
+     engine.addToGroup("all", engine.patch("pixel", 6, 100));
+     engine.addToGroup("all", engine.patch("pixel", 7, 100));
+     engine.addToGroup("all", engine.patch("pixel", 8, 93));
+     engine.addToGroup("all", engine.patch("pixel", 9, 120));
 
-    engine.addToGroup("ptop", fids1);
-    engine.addToGroup("pside", fids2);
-    engine.addToGroup("all", "ptop");
-    engine.addToGroup("all", "pside");
+     engine.addColor("all", {0, 0, 0});
+     engine.update();
 
-    engine.addEffect2Color("all", {255, 0, 0}, {0, 0, 255});
-    // engine.addColor("all", {255, 0, 0});
-    auto* e = engine.addEffectDimmerChase("all");
-    e->m_curve.setType(Utils::Curve::Type::SQUARE);
-    e->m_curve.setPeaks(4);
-
-    for (int i = 0; i < 500; i++) {
-        engine.update();
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
-        // std::this_thread::sleep_for(std::chrono::microseconds(16667));
-    }
-
-    std::cout << engine.describe();
-    return 0;
+     // std::cout << engine.describe();
+     return 0;
 }
