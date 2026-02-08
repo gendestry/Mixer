@@ -79,6 +79,7 @@ namespace DMX::Output {
         inet_pton(AF_INET, ip.c_str(), &m_destinationIp.sin_addr);
 
         initializePacket();
+        // setSourceName("bobar");
 
         m_inited = true;
     }
@@ -117,5 +118,15 @@ namespace DMX::Output {
         m_packet[39] = 0x01;
         m_packet[113] = m_universe; // Universe 1
         m_packet[125] = 0x02;       // DMX start code
+    }
+
+    void SacnSender::setSourceName(const std::string& name)
+    {
+        // Max 63 chars + null terminator
+        char src[64] = {0};
+
+        std::strncpy(src, name.c_str(), 63);
+
+        memcpy(&m_packet[44], src, 64);
     }
 }

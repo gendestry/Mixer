@@ -55,28 +55,22 @@ public:
 
     void update()
     {
-        auto bps = bpm / 60.f;
-        float et = engineTick++ * bps;
-        if (et >= 60.f)
-        {
+        // auto bps = bpm / 60.f;
+        // float et = engineTick++ * bps;
+        // if (et >= 60.f)
+        // {
             m_effectFunction(tick++);
-            engineTick = engineTick % 60;
-        }
-        else {
-            m_effectFunction(tick);
-        }
+            // engineTick = engineTick % 60;
+        // }
+        // else {
+            // m_effectFunction(tick);
+        // }
     }
 
 };
 
 struct ColorEffect : public Effect
 {
-    // ColorEffect(DMX::FixtureGroup& group)
-    //     : Effect(group, Type::COLOR)
-    // {
-    //     // m_curve.setLength(m_parameters.size());
-    // }
-
     ColorEffect(DMX::FixtureGroup& group, Utils::Colors::RGB color)
         : Effect(group, Type::COLOR)
     {
@@ -103,15 +97,18 @@ struct ColorEffect : public Effect
 
 struct FX2Color : public Effect
 {
-    FX2Color(DMX::FixtureGroup& group, Utils::Colors::RGB color1, Utils::Colors::RGB color2)
-        : Effect(group, Type::COLOR)
+    uint16_t m_peaks;
+    FX2Color(DMX::FixtureGroup& group, Utils::Colors::RGB color1, Utils::Colors::RGB color2, uint16_t peaks = 1)
+        : Effect(group, Type::COLOR),
+            m_peaks(peaks)
+
     {
         setEffect([color1, color2, this](uint32_t tick) {
             auto& params = this->m_parameters;
-            const auto grad = Utils::Colors::makeGradient({color1, color2}, {0.5f, 0.5f}, params.size());
+            const auto grad = Utils::Colors::makeGradient({color1, color2}, {0.5f, 0.5f}, params.size() / m_peaks);
             for (int i = 0; i < params.size(); ++i)
             {
-                auto& color = grad[(i + tick) % params.size()];
+                auto& color = grad[(i + tick) % (params.size() / m_peaks)];
                 const auto& param = params[i];
                 auto hsv = Utils::Colors::rgbToHsv(color);
 
@@ -186,40 +183,15 @@ struct DimmerEffect : public Effect
 
 struct FXDimmerChase : public Effect
 {
-    Utils::Curve::Interface m_curve;
-    // Utils::CurveVariant m_curve;
+    std::unique_ptr<Utils::Curve::Interface> m_curve;
 
-    // FXDimmerChase(DMX::FixtureGroup& group, Utils::CurveVariant curve)
-    //     : Effect(group, Type::DIMMER),
-    //       m_curve(std::move(curve))
-    // {
-    //     std::visit([this](auto& c){ c.setLength(this->m_parameters.size()); }, m_curve);
-    //     bpm = 2;
-    //
-    //     setEffect([this](uint32_t tick) {
-    //         auto& params = this->m_parameters;
-    //         for (int i = 0; i < params.size(); ++i)
-    //         {
-    //             auto param = params[i];
-    //             auto r = static_cast<uint8_t>(param->getValue("R").value() * 255.f);
-    //             auto g = static_cast<uint8_t>(param->getValue("G").value() * 255.f);
-    //             auto b = static_cast<uint8_t>(param->getValue("B").value() * 255.f);
-    //
-    //             auto hsv = Utils::Colors::rgbToHsv({r,g,b});
-    //             hsv.v = std::visit([tick, i](auto& c){ return c[tick + i]; }, this->m_curve);
-    //             // hsv.v = this->m_curve[(tick + i)];
-    //
-    //             auto color = Utils::Colors::hsvToRgb(hsv);
-    //             param->setValue("R", color.pr);
-    //             param->setValue("G", color.pg);
-    //             param->setValue("B", color.pb);
-    //         }
-    //     });
-    // }
     FXDimmerChase(DMX::FixtureGroup& group, const Utils::Curve::Type type = Utils::Curve::SINUSOID)
         : Effect(group, Type::DIMMER),
-          m_curve(Utils::Curve::Interface(type, m_parameters.size()))
+          m_curve(Utils::Curve::getCurveByType(type, m_parameters.size()))
     {
+        // std::visit([this](auto& c){ c.setLength(this->m_parameters.size()); }, m_curve);
+        bpm = 2;
+
         setEffect([this](uint32_t tick) {
             auto& params = this->m_parameters;
             for (int i = 0; i < params.size(); ++i)
@@ -230,7 +202,8 @@ struct FXDimmerChase : public Effect
                 auto b = static_cast<uint8_t>(param->getValue("B").value() * 255.f);
 
                 auto hsv = Utils::Colors::rgbToHsv({r,g,b});
-                hsv.v = this->m_curve[(tick + i)];
+                // hsv.v = std::visit([tick, i](auto& c){ return c[tick + i]; }, this->m_curve);
+                hsv.v = this->m_curve->operator[](tick + i);
 
                 auto color = Utils::Colors::hsvToRgb(hsv);
                 param->setValue("R", color.pr);
@@ -243,22 +216,22 @@ struct FXDimmerChase : public Effect
 
 struct FXDimmerGrouped : public Effect
 {
-    Utils::Curve::Interface m_curve;
+    // Utils::Curve::Interface m_curve;
+    std::unique_ptr<Utils::Curve::Interface> m_curve;
     FXDimmerGrouped(DMX::FixtureGroup& group, const Utils::Curve::Type type = Utils::Curve::SINUSOID)
         : Effect(group, Type::DIMMER),
-          m_curve(Utils::Curve::Interface(type, m_parameters.size()))
+          m_curve(Utils::Curve::getCurveByType(type, m_parameters.size()))
     {
         setEffect([this](uint32_t tick) {
             auto& params = this->m_parameters;
             for (auto& param : params)
             {
-                // auto param = params[i];
                 auto r = static_cast<uint8_t>(param->getValue("R").value() * 255.f);
                 auto g = static_cast<uint8_t>(param->getValue("G").value() * 255.f);
                 auto b = static_cast<uint8_t>(param->getValue("B").value() * 255.f);
 
                 auto hsv = Utils::Colors::rgbToHsv({r,g,b});
-                hsv.v = this->m_curve[(tick)];
+                hsv.v = this->m_curve->operator[](tick);
 
                 auto color = Utils::Colors::hsvToRgb(hsv);
                 param->setValue("R", color.pr);

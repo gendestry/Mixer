@@ -27,46 +27,46 @@ namespace Utils {
             fill();
         }
 
-        void Interface::update()
-        {
-            m_values.resize(m_length);
-            auto temp = Utils::linearInterpolation(0, 1, m_length);
-
-            for (auto i = 0; i < m_length; i++)
-            {
-                double lin = temp[i];
-                double phase = m_peaks * lin;
-                switch (m_type)
-                {
-                case Type::SINUSOID:
-                {
-                    constexpr double TWO_PI = M_PI;
-                    m_values[i] = std::fabs(std::sin(lin * m_peaks * TWO_PI));
-                    break;
-                }
-                case Type::TRIANGLE:
-                {
-                    double t = std::fmod(phase * 2.0, 2.0);
-                    m_values[i] = (t <= 1.0) ? t : 2.0 - t;
-                    break;
-                }
-                case Type::SQUARE:
-                {
-                    m_values[i] = std::fmod(phase, 1.0) < 0.5 ? 1.0 : 0.0;
-                    break;
-                }
-                case Type::LINE:
-                {
-                    break;
-                }
-
-                default:
-                {
-                    throw std::invalid_argument("Invalid curve type");
-                }
-                }
-            }
-        }
+        // void Interface::update()
+        // {
+        //     m_values.resize(m_length);
+        //     auto temp = Utils::linearInterpolation(0, 1, m_length);
+        //
+        //     for (auto i = 0; i < m_length; i++)
+        //     {
+        //         double lin = temp[i];
+        //         double phase = m_peaks * lin;
+        //         switch (m_type)
+        //         {
+        //         case Type::SINUSOID:
+        //         {
+        //             constexpr double TWO_PI = M_PI;
+        //             m_values[i] = std::fabs(std::sin(lin * m_peaks * TWO_PI));
+        //             break;
+        //         }
+        //         case Type::TRIANGLE:
+        //         {
+        //             double t = std::fmod(phase * 2.0, 2.0);
+        //             m_values[i] = (t <= 1.0) ? t : 2.0 - t;
+        //             break;
+        //         }
+        //         case Type::SQUARE:
+        //         {
+        //             m_values[i] = std::fmod(phase, 1.0) < 0.5 ? 1.0 : 0.0;
+        //             break;
+        //         }
+        //         case Type::LINE:
+        //         {
+        //             break;
+        //         }
+        //
+        //         default:
+        //         {
+        //             throw std::invalid_argument("Invalid curve type");
+        //         }
+        //         }
+        //     }
+        // }
 
         float Interface::operator[] (std::size_t index) const
         {
@@ -112,6 +112,46 @@ namespace Utils {
                 double phase = m_peaks * lin[i];
                 double m = std::fmod(phase, 1.f);
                 m_values[i] = (m < 0.5) ? m_max : m_min;
+            }
+        }
+
+        void Line::fill() {
+            m_values.clear();
+            m_values.resize(m_length);
+
+            const auto lin = Utils::linearInterpolation(m_min, m_max, m_length/m_peaks);
+            const auto linlen = lin.size();
+
+            for (int p = 0; p < m_peaks; p++)
+            {
+                for (auto i = 0; i < linlen; i++)
+                {
+                    m_values[p * linlen + i] = lin[i];
+                }
+            }
+        }
+
+        // InterfaceVariant getCurveByType(Type type) {
+        //     switch (type) {
+        //         case SINUSOID:
+        //             return Sinusoid(1, 1);
+        //         case TRIANGLE:
+        //             return Triangle(1, 1);
+        //         case SQUARE:
+        //             return Square(1, 1);
+        //     }
+        // }
+
+        std::unique_ptr<Interface> getCurveByType(Type type, uint16_t length) {
+            switch (type) {
+                case SINUSOID:
+                    return std::make_unique<Sinusoid>(length, 1);
+                case TRIANGLE:
+                    return std::make_unique<Triangle>(length, 1);
+                case SQUARE:
+                    return std::make_unique<Square>(length, 1);
+                case LINE:
+                    return std::make_unique<Line>(length, 1);
             }
         }
     }

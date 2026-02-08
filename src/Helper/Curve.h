@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <vector>
 #include <variant>
+#include <memory>
 
 namespace Utils
 {
@@ -29,9 +30,9 @@ namespace Utils
             float m_min = 0.f;
             float m_max = 1.f;
 
-            void update();
+            // void update();
             void init();
-            virtual void fill() {};
+            virtual void fill() = 0;
         public:
              Type m_type;
 
@@ -41,9 +42,11 @@ namespace Utils
 
             virtual ~Interface() = default;
 
-            void setType(const Type type) { m_type = type; update(); }
-            void setLength(const uint32_t length) { m_length = length; update();}
-            void setPeaks(const uint16_t peaks) { m_peaks = peaks; update();}
+            void setType(const Type type) { m_type = type; fill(); }
+            void setLength(const uint32_t length) { m_length = length; fill();}
+            void setPeaks(const uint16_t peaks) { m_peaks = peaks; fill();}
+            void setMin(const float min) { m_min = min; fill();}
+            void setMax(const float max) { m_max = max; fill();}
 
             uint32_t getLength() const { return m_length; }
             // void init(Type type, uint16_t length, uint16_t peaks = 1U);
@@ -99,7 +102,27 @@ namespace Utils
             }
         };
 
+        class Line : public Interface
+        {
+        protected:
+            void fill() override;
+        public:
+            Line(uint16_t length, uint16_t peaks = 1U)
+                : Interface(LINE, length, peaks) {
+                init();
+            }
+
+            Line(uint16_t length, float min, float max, uint16_t peaks = 1U)
+                : Interface(LINE, min, max, length, peaks) {
+                init();
+            }
+        };
+
         using InterfaceVariant = std::variant<Sinusoid, Triangle, Square>;
+
+        // InterfaceVariant getCurveByType(Type type);
+        std::unique_ptr<Interface> getCurveByType(Type type, uint16_t length = 1);
+
     }
 
 

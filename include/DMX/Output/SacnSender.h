@@ -1,6 +1,7 @@
 #pragma once
 #include <arpa/inet.h>
 #include <array>
+#include <string>
 
 namespace DMX::Output
 {
@@ -30,5 +31,8 @@ public:
     void setBuffer(uint8_t *buffer);
     void begin(uint8_t universe, const char *localIp);
     void send();
+
+    void setSourceName(const std::string& name);
+
 };
 }
