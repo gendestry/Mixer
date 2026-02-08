@@ -64,6 +64,14 @@ void Engine::clearDirtyUniverses()
 
 void Engine::update()
 {
+    // static bool first = true;
+    // if (first) {
+    //     for (Effect::Effect* effect : m_effects)
+    //     {
+    //         effect->firstUpdate();
+    //     }
+    //     first = false;
+    // }
     for (Effect::Effect* effect : m_effects)
     {
         effect->update();

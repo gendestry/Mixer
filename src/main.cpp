@@ -29,11 +29,12 @@ int main()
     auto* fx = engine.addEffectDimmerChase("all", Utils::Curve::SINUSOID);
     // Utils::Sinusoid s(10, 1);
     // auto* fx = engine.addEffectDimmerChase("all", std::move(s));
-    // fx->m_curve.setPeaks(4);
+    fx->m_curve.setPeaks(4);
     // engine.addDimmer("all", 100);
     // engine.addEffectDimmerGroup("all");
     // engine.addColor("all", {255, 128, 0});
-    engine.addEffect2Color("all", {255, 0, 0}, {0, 0, 255});
+    auto f = engine.addEffect2Color("all", {255, 0, 0}, {0, 0, 255});
+    f->setBPM(160);
     // std::vector<Utils::Colors::RGB> colors;
     // colors.push_back(Utils::Colors::RGB(255, 0, 0));
     // colors.push_back(Utils::Colors::RGB(255, 128, 0));

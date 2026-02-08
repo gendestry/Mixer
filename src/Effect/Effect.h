@@ -26,7 +26,7 @@ protected:
     Type m_type;
     uint32_t tick = 0;
     uint32_t engineTick = 1;
-    uint16_t bpm = 1;
+    uint16_t bpm = 60;
 
     // Utils::Curve m_curve;
 
@@ -49,18 +49,22 @@ public:
         m_effectFunction = std::move(eff);
     }
 
+    void setBPM(uint16_t bpm) {
+        this->bpm = bpm;
+    }
+
     void update()
     {
-        // auto bps = bpm / 60.f;
-        // float et = engineTick++ * bps;
-        // if (et >= 60.f)
-        // {
-            m_effectFunction(tick+= bpm);
-        //     engineTick = engineTick % 60;
-        // }
-        // auto x = et / 60.f; // ebps
-        // if (et * 60.f)
-
+        auto bps = bpm / 60.f;
+        float et = engineTick++ * bps;
+        if (et >= 60.f)
+        {
+            m_effectFunction(tick++);
+            engineTick = engineTick % 60;
+        }
+        else {
+            m_effectFunction(tick);
+        }
     }
 
 };
@@ -182,7 +186,7 @@ struct DimmerEffect : public Effect
 
 struct FXDimmerChase : public Effect
 {
-    Utils::Curve m_curve;
+    Utils::Curve::Interface m_curve;
     // Utils::CurveVariant m_curve;
 
     // FXDimmerChase(DMX::FixtureGroup& group, Utils::CurveVariant curve)
@@ -214,9 +218,8 @@ struct FXDimmerChase : public Effect
     // }
     FXDimmerChase(DMX::FixtureGroup& group, const Utils::Curve::Type type = Utils::Curve::SINUSOID)
         : Effect(group, Type::DIMMER),
-          m_curve(Utils::Curve(type, m_parameters.size()))
+          m_curve(Utils::Curve::Interface(type, m_parameters.size()))
     {
-        bpm = 2;
         setEffect([this](uint32_t tick) {
             auto& params = this->m_parameters;
             for (int i = 0; i < params.size(); ++i)
@@ -240,10 +243,10 @@ struct FXDimmerChase : public Effect
 
 struct FXDimmerGrouped : public Effect
 {
-    Utils::Curve m_curve;
+    Utils::Curve::Interface m_curve;
     FXDimmerGrouped(DMX::FixtureGroup& group, const Utils::Curve::Type type = Utils::Curve::SINUSOID)
         : Effect(group, Type::DIMMER),
-          m_curve(Utils::Curve(type, m_parameters.size()))
+          m_curve(Utils::Curve::Interface(type, m_parameters.size()))
     {
         setEffect([this](uint32_t tick) {
             auto& params = this->m_parameters;
