@@ -51,6 +51,20 @@ public:
         return static_cast<Effect::ColorEffect*>(effect);
     }
 
+    Effect::DimmerEffect* addDimmer(const std::string& groupName, float percentage)
+    {
+        Effect::Effect* effect = new Effect::DimmerEffect(getFixtureGroup(groupName), percentage);
+        m_effects.push_back(effect);
+        return static_cast<Effect::DimmerEffect*>(effect);
+    }
+
+    Effect::FXDimmerGrouped* addEffectDimmerGroup(const std::string& groupName, Utils::Curve::Type curve = Utils::Curve::SINUSOID)
+    {
+        Effect::Effect* effect = new Effect::FXDimmerGrouped(getFixtureGroup(groupName), curve);
+        m_effects.push_back(effect);
+        return static_cast<Effect::FXDimmerGrouped*>(effect);
+    }
+
     Effect::FXDimmerChase* addEffectDimmerChase(const std::string& groupName, Utils::Curve::Type curve = Utils::Curve::SINUSOID)
     {
         Effect::Effect* effect = new Effect::FXDimmerChase(getFixtureGroup(groupName), curve);
@@ -58,11 +72,25 @@ public:
         return static_cast<Effect::FXDimmerChase*>(effect);
     }
 
+    // Effect::FXDimmerChase* addEffectDimmerChase(const std::string& groupName, Utils::CurveVariant&& curve)
+    // {
+    //     Effect::Effect* effect = new Effect::FXDimmerChase(getFixtureGroup(groupName), std::move(curve));
+    //     m_effects.push_back(effect);
+    //     return static_cast<Effect::FXDimmerChase*>(effect);
+    // }
+
     Effect::FX2Color* addEffect2Color(const std::string& groupName, Utils::Colors::RGB color1, Utils::Colors::RGB color2)
     {
         Effect::Effect* effect = new Effect::FX2Color(getFixtureGroup(groupName), color1, color2);
         m_effects.push_back(effect);
         return static_cast<Effect::FX2Color*>(effect);
+    }
+
+    Effect::FXColorGradient* addEffectColorGradient(const std::string& groupName, const std::vector<Utils::Colors::RGB>& colors, const std::vector<float>& percentages)
+    {
+        Effect::Effect* effect = new Effect::FXColorGradient(getFixtureGroup(groupName), colors, percentages);
+        m_effects.push_back(effect);
+        return static_cast<Effect::FXColorGradient*>(effect);
     }
 
     void update();

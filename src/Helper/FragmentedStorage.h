@@ -28,7 +28,7 @@ struct Fragment : public Traits::Printable
     uint32_t size = 0U;
     uint8_t* buffer = nullptr;
     uint16_t id = 0U;
-    std::string name;
+    std::string name = "undefined";
 
     Fragment() = default;
     virtual ~Fragment() = default;

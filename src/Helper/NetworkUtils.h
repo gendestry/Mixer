@@ -12,5 +12,7 @@ struct NetworkUtils {
     static void scan();
     static void rescan();
 
+    static std::unordered_map<std::string, std::string> IPs();
+
     static std::string primaryIP();
 };

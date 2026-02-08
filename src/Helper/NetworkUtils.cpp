@@ -16,7 +16,8 @@ void NetworkUtils::scan()
     rescan();
 }
 
-void NetworkUtils::rescan() {
+void NetworkUtils::rescan()
+{
     m_ips.clear();
     ifaddrs* ifaddr;
 
@@ -39,7 +40,35 @@ void NetworkUtils::rescan() {
     }
 }
 
-std::string NetworkUtils::primaryIP() {
+std::unordered_map<std::string, std::string> NetworkUtils::IPs()
+{
+    std::unordered_map<std::string, std::string> ret;
+
+    ifaddrs* ifaddr;
+    getifaddrs(&ifaddr);
+
+    for (ifaddrs* ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr) continue;
+
+        if (ifa->ifa_addr->sa_family == AF_INET) {
+            char ip[INET_ADDRSTRLEN];
+            auto* addr = (sockaddr_in*)ifa->ifa_addr;
+            inet_ntop(AF_INET, &addr->sin_addr, ip, sizeof(ip));
+
+            // Skip loopback
+            if (strncmp(ip, "127.", 4) == 0)
+                continue;
+
+            ret[ifa->ifa_name] = std::string(ip);
+        }
+    }
+
+    return ret;
+}
+
+
+std::string NetworkUtils::primaryIP()
+{
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
 
     sockaddr_in serv{};

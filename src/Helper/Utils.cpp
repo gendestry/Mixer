@@ -96,6 +96,22 @@ namespace Utils
         return result;
     }
 
+    std::vector<float> linearInterpolationMirrored(float start, float end, uint32_t n) {
+        bool odd = n % 2 == 1;
+        int num = odd ? (n / 2 + 1) : (n / 2);
+        auto lin = Utils::linearInterpolation(start, end, num);
+        auto ret = lin;
+        if (odd)
+        {
+            ret.erase(ret.end());
+        }
+
+        std::reverse(lin.begin(), lin.end());
+        ret.insert(ret.end(), lin.begin(), lin.end());
+        return ret;
+    }
+
+
     std::vector<uint16_t> make_range(uint16_t start, uint16_t end)
     {
         auto view = std::ranges::iota_view(start, end); // [start, end)

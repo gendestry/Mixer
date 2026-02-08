@@ -112,6 +112,11 @@ namespace Utils
         static const std::string colorReset;
         static const std::string colorDim;
         static const std::string colorItalic;
+
+        RGB White = RGB(255, 255, 255);
+        RGB Red = RGB(255, 0, 0);
+        RGB Green = RGB(0, 255, 0);
+        RGB Blue = RGB(0, 0, 255);
     };
     // const std::string colorGreen = "\x1B[32m";
     // const std::string colorYellow = "\x1B[33m";
@@ -120,7 +125,7 @@ namespace Utils
     // const std::string colorDim = "\x1B[2m";
     // const std::string colorItalic = "\x1B[3m";
 
-    
+
 
   
 };
