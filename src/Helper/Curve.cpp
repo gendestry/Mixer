@@ -86,6 +86,20 @@ namespace Utils {
             }
         }
 
+        void SinusoidHalf::fill() {
+            m_values.clear();
+            m_values.resize(m_length);
+
+            const auto lin = Utils::linearInterpolation(0, 1, m_length);
+            constexpr double d90 = M_PI / 2.0;
+            for (auto i = 0; i < m_length; i++)
+            {
+                const double phase = m_peaks * lin[i];
+                const double val = std::fabs(std::sin(phase * d90));
+                m_values[i] = m_min + val * (m_max - m_min);
+            }
+        }
+
         void Triangle::fill() {
             m_values.clear();
             m_values.resize(m_length);

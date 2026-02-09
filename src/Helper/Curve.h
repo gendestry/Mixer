@@ -29,6 +29,7 @@ namespace Utils
 
             float m_min = 0.f;
             float m_max = 1.f;
+            bool m_full = true;
 
             // void update();
             void init();
@@ -65,6 +66,22 @@ namespace Utils
             }
 
             Sinusoid(float min, float max, uint16_t length, uint16_t peaks = 1U)
+                : Interface(SINUSOID, min, max, length, peaks) {
+                init();
+            }
+        };
+
+        class SinusoidHalf : public Interface
+        {
+        protected:
+            void fill() override;
+        public:
+            SinusoidHalf(uint16_t length, uint16_t peaks = 1U)
+                : Interface(SINUSOID, length, peaks) {
+                init();
+            }
+
+            SinusoidHalf(float min, float max, uint16_t length, uint16_t peaks = 1U)
                 : Interface(SINUSOID, min, max, length, peaks) {
                 init();
             }

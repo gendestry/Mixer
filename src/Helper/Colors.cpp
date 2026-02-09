@@ -2,7 +2,11 @@
 #include <algorithm>
 #include <cmath>
 #include <format>
+#include <iostream>
 #include <sstream>
+#include <print>
+
+#include "Curve.h"
 
 namespace Utils
 {
@@ -12,6 +16,13 @@ namespace Utils
     const std::string Colors::colorReset = "\x1B[0m";
     const std::string Colors::colorDim = "\x1B[2m";
     const std::string Colors::colorItalic = "\x1B[3m";
+
+    Colors::RGB Colors::White = RGB(255, 255, 255);
+    Colors::RGB Colors::Red = RGB(255, 0, 0);
+    Colors::RGB Colors::Yellow = RGB(255, 100, 0);
+    Colors::RGB Colors::Green = RGB(0, 255, 0);
+    Colors::RGB Colors::Blue = RGB(0, 0, 255);
+
 
     std::string Colors::RGB::toString() const
     {
@@ -121,85 +132,61 @@ namespace Utils
         return std::format("\x1B[{}8;2;{};{};{}m", (fg ? 3 : 4), color.r, color.g, color.b);
     }
 
-    std::vector<Colors::RGB> Colors::makeGradient(const std::vector<Colors::RGB>& colorss, const std::vector<float>& weightss, int N)
-    {
-        auto colors = colorss;
-        auto weights = weightss;
-        colors.push_back(colorss.front());
-        float& w = weights[0];
-        w /= 2.f;
-        weights.push_back(w);
-
-        if (colors.size() != weights.size())
-            throw std::invalid_argument("Colors and weights must match.");
-
-        if (colors.size() < 2)
-            throw std::invalid_argument("Need at least two colors.");
-
-        if (N < colors.size())
-            throw std::invalid_argument("N must be > 1.");
-
-        // Normalize weights
-        float sum = 0.0f;
-        for (float w : weights)
-            sum += w;
-
-        if (sum <= 0)
-            throw std::invalid_argument("Invalid weights.");
-
-        std::vector<float> norm(weights.size());
-        for (size_t i = 0; i < weights.size(); i++)
-            norm[i] = weights[i] / sum;
-
-        // Build stops
-        std::vector<float> stops;
-        stops.reserve(colors.size());
-
-        float pos = 0.0f;
-
-        for (float w : norm) {
-            stops.push_back(pos);
-            pos += w;
+    std::vector<Colors::RGB> Colors::gradient(const Colors::RGB& color1, const Colors::RGB& color2, const uint16_t length, bool half) {
+        std::vector<RGB> ret;
+        std::unique_ptr<Curve::Interface> curve;
+        if (half)
+        {
+            curve = std::make_unique<Curve::SinusoidHalf>(length);
+        }
+        else
+        {
+            curve = std::make_unique<Curve::Sinusoid>(length);
         }
 
-        stops.push_back(1.0f); // End
-
-        std::vector<Colors::RGB> result;
-        result.reserve(N);
-
-        for (int i = 0; i < N; i++) {
-
-            float t = float(i) / float(N - 1);
-
-            // Find stop
-            size_t idx = 0;
-            while (idx + 1 < stops.size() && t > stops[idx + 1])
-                idx++;
-
-            // Clamp
-            if (idx >= colors.size() - 1) {
-                result.push_back(colors.back());
-                continue;
-            }
-
-            float start = stops[idx];
-            float end   = stops[idx + 1];
-
-            float localT = (t - start) / (end - start);
-
-            // Interpolate only in this region
-            const auto& c1 = colors[idx];
-            const auto& c2 = colors[idx + 1];
-
-            uint8_t r = uint8_t(c1.r + (c2.r - c1.r) * localT);
-            uint8_t g = uint8_t(c1.g + (c2.g - c1.g) * localT);
-            uint8_t b = uint8_t(c1.b + (c2.b - c1.b) * localT);
-
-            result.emplace_back(r, g, b);
+        // const Curve::Sinusoid curve(length);
+        for (int i = 0; i < length; i++)
+        {
+            float t  = (*curve)[i];
+            const uint8_t r = static_cast<uint8_t>(color1.r * t + color2.r * (1.f - t));
+            const uint8_t g = static_cast<uint8_t>(color1.g * t + color2.g * (1.f - t));
+            const uint8_t b = static_cast<uint8_t>(color1.b * t + color2.b * (1.f - t));
+            ret.push_back(RGB(r,g,b));
         }
 
-        return result;
+        return ret;
     }
 
+    std::vector<Colors::RGB> Colors::makeGradient(const std::vector<RGB>& colors, const std::vector<float>& weights, int N)
+    {
+        std::vector<RGB> ret;
+        float sum = 0.0f;
+        for (float w : weights)
+        {
+            sum += w;
+        }
+
+        if (sum <= 0)
+        {
+            throw std::invalid_argument("Invalid weights.");
+        }
+
+        float acc = 0.0f;
+        int start = 0;
+        int end = 0;
+        for (size_t i = 0; i < weights.size(); i++)
+        {
+            acc += weights[i] / sum;
+            end = N * acc;
+
+            auto c1 = colors[i % colors.size()];
+            auto c2 = colors[(i + 1) % colors.size()];
+            auto grad = Utils::Colors::gradient(c2, c1, end - start, true);
+            ret.insert(ret.end(), grad.begin(), grad.end());
+            start = end;
+        }
+
+        return ret;
+    }
 
 };

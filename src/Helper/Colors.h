@@ -102,9 +102,8 @@ namespace Utils
 
         static std::string colorByRGB(uint8_t r, uint8_t g, uint8_t b, bool fg);
         static std::string colorByRGB(const RGB& color, bool fg);
-        static std::vector<RGB> gradient(const RGB& color1, const RGB& color2);
+        static std::vector<RGB> gradient(const RGB& color1, const RGB& color2, uint16_t length, bool half = false);
         static std::vector<RGB> makeGradient(const std::vector<RGB>& colors, const std::vector<float>& weights, int N);
-
         
         static const std::string colorGreen;
         static const std::string colorYellow;
@@ -113,10 +112,11 @@ namespace Utils
         static const std::string colorDim;
         static const std::string colorItalic;
 
-        RGB White = RGB(255, 255, 255);
-        RGB Red = RGB(255, 0, 0);
-        RGB Green = RGB(0, 255, 0);
-        RGB Blue = RGB(0, 0, 255);
+        static RGB White;
+        static RGB Red;
+        static RGB Yellow;
+        static RGB Green;
+        static RGB Blue;
     };
     // const std::string colorGreen = "\x1B[32m";
     // const std::string colorYellow = "\x1B[33m";

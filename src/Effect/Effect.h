@@ -132,21 +132,22 @@ struct FXColorGradient : public Effect
     FXColorGradient(DMX::FixtureGroup& group, const std::vector<Utils::Colors::RGB>& colors, const std::vector<float>& percentages)
         : Effect(group, Type::COLOR)
     {
-        setEffect([&colors, &percentages, this](uint32_t tick) {
+        setEffect([colors, percentages, this](uint32_t tick) {
             auto& params = this->m_parameters;
             const auto grad = Utils::Colors::makeGradient(colors, percentages, params.size());
             for (int i = 0; i < params.size(); ++i)
             {
                 auto& color = grad[(i + tick) % params.size()];
                 const auto& param = params[i];
-                auto hsv = Utils::Colors::rgbToHsv(color);
 
                 auto r = static_cast<uint8_t>(param->getValue("R").value() * 255.f);
                 auto g = static_cast<uint8_t>(param->getValue("G").value() * 255.f);
                 auto b = static_cast<uint8_t>(param->getValue("B").value() * 255.f);
                 Utils::Colors::HSV hsvParam = Utils::Colors::rgbToHsv({r, g, b});
 
+                auto hsv = Utils::Colors::rgbToHsv(color);
                 hsv.v = hsvParam.v;
+
                 auto rgb = Utils::Colors::hsvToRgb(hsv);
                 param->setValue("R", rgb.pr);
                 param->setValue("G", rgb.pg);
