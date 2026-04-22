@@ -7,29 +7,22 @@ include(FetchContent)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# --------------------------------------------------
-# Fetch fmt
-# --------------------------------------------------
-FetchContent_Declare(
-        fmt
-        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-        GIT_TAG 12.1.0
-)
-
-FetchContent_MakeAvailable(fmt)
-
+find_package(fmt CONFIG REQUIRED)
+find_package(asio CONFIG REQUIRED)
+find_package(magic_enum CONFIG REQUIRED)
 # --------------------------------------------------
 # Your target
 # --------------------------------------------------
 
 # Collect source files
-file(GLOB_RECURSE SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+file(GLOB_RECURSE SOURCES src/*.cpp)
 
 # Define the executable
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES}
+        include/Scene/fixture.h)
 
 target_link_libraries(${PROJECT_NAME}
-        PRIVATE fmt::fmt
+        PRIVATE fmt::fmt asio::asio magic_enum::magic_enum
 )
 
 # Attach include directories to the target (after it's created)
