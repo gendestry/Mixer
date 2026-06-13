@@ -1,45 +1,50 @@
-#include "Engine/Components/Patch.h"
-#include "Engine/Components/DMXOutput.h"
-#include "DMX/FixtureGroup.h"
+#include "Engine/Engine.h"
 #include "Utils/Network/Interfaces.h"
+#include <chrono>
 #include <iostream>
+#include <thread>
 
 using namespace Core;
 
 int main()
 {
-    Engine::Components::Patch patch;
+    Engine::Engine engine;
 
-    // "pixel": RGB only (3 channels). With colour but no dimmer it gets a
-    // virtual dimmer automatically when patched.
-    Fixture& pixel = patch.library().define("pixel");
-    pixel.add(Parameters::Presets::ColorRGB());
+    // "pixel": RGB only (3 channels) -> gets a virtual dimmer when patched.
+    engine.define("pixel").add(Parameters::Presets::ColorRGB());
 
-    // Patch pixels across three universes:
-    //   93 @ universe 8, 120 @ universe 9, 60 @ universe 10.
-    auto u8  = patch.patch("pixel",  8,  93);
-    auto u9  = patch.patch("pixel",  9, 120);
-    auto u10 = patch.patch("pixel", 10,  60);
+    // Patch + group: group1 @ uni 8, group2 @ uni 9, group3 @ uni 10.
+    engine.addToGroup("group1", engine.patch("pixel",  8,  93));
+    engine.addToGroup("group2", engine.patch("pixel",  9, 120));
+    engine.addToGroup("group3", engine.patch("pixel", 10,  60));
 
-    // Group them all, colour at 50% via the virtual dimmer.
-    DMX::FixtureGroup all("all");
-    all.add(patch.getFixtures(u8));
-    all.add(patch.getFixtures(u9));
-    all.add(patch.getFixtures(u10));
-    all.setColor({0, 128, 255});
-    all.setIntensity(0.1f);
-    all.applyVirtualDimmers();
+    auto& prog = engine.programmer();
 
-    // Send the dirty universes (8, 9, 10 - marked dirty by patch()) over sACN.
-    Engine::Components::DMXOutput output;
+    // Select group1 + group2, add a dimmer chase at 120 BPM.
+    prog.select(*engine.getGroup("group1"));
+    prog.addToSelection(*engine.getGroup("group2"));
+    prog.addDimmerChase(60.0f);
+
+    // New selection: group1 -> green.
+    prog.select(*engine.getGroup("group1"));
+    prog.setColor({0, 255, 0});
+    prog.setIntensity(1.0f);
+
+    // New selection: group3 -> intensity full.
+    prog.select(*engine.getGroup("group3"));
+    prog.setColor({0, 255, 255});
+    prog.setIntensity(1.0f);
+
+    std::cout << prog.describe() << '\n';
+
+    // Output + render loop ~40 fps.
     Utils::Network::Interfaces::scan();
-    output.setIP(Utils::Network::Interfaces::primaryIP());
-    output.update(patch.dirtyUniverses(), patch);
-    patch.clearDirty();
-
-    // Inspect.
-    std::cout << patch.describe() << "\n";
-    std::cout << patch.getUniverse(8)->bytesToString() << '\n';
+    engine.setIP(Utils::Network::Interfaces::primaryIP());
+    for (int frame = 0; frame < 400; ++frame)
+    {
+        engine.update();
+        std::this_thread::sleep_for(std::chrono::milliseconds(25));
+    }
 
     return 0;
 }

@@ -58,6 +58,7 @@ namespace Core::Engine::Components
         [[nodiscard]] FixturePtr getFixture(uint16_t fid) const;
         [[nodiscard]] std::vector<FixturePtr> getFixtures(const std::vector<uint16_t>& fids) const;
         [[nodiscard]] const std::vector<FixturePtr>& getFixturesByName(const std::string& name) const;
+        [[nodiscard]] const std::map<uint16_t, FixturePtr>& fixtures() const { return m_fixtures; }
 
         // ---- dirty tracking ----
         [[nodiscard]] const std::set<uint16_t>& dirtyUniverses() const { return m_dirty; }
