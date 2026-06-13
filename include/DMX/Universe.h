@@ -51,6 +51,9 @@ namespace Core::DMX
         [[nodiscard]] const std::vector<FixturePtr>& byName(const std::string& name) const;
         [[nodiscard]] std::size_t fixtureCount() const { return getNumFragments(); }
 
+        // Raw 512-byte DMX frame, for the output stage.
+        [[nodiscard]] const std::array<uint8_t, 512>& buffer() const { return m_buffer; }
+
         [[nodiscard]] std::string describe() const;
     };
 }
