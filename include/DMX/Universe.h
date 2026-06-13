@@ -54,6 +54,9 @@ namespace Core::DMX
         // Raw 512-byte DMX frame, for the output stage.
         [[nodiscard]] const std::array<uint8_t, 512>& buffer() const { return m_buffer; }
 
+        // Zero the DMX values (keeps the patch). Called each frame before render.
+        void blackout() { m_buffer.fill(0); }
+
         [[nodiscard]] std::string describe() const;
     };
 }

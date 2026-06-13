@@ -24,22 +24,27 @@ int main()
     prog.select(*engine.getGroup("group1"));
     prog.addToSelection(*engine.getGroup("group2"));
     prog.addDimmerChase(60.0f);
+    engine.storeCue("main", 1.0f);
+    prog.clear();
 
     // New selection: group1 -> green.
     prog.select(*engine.getGroup("group1"));
     prog.setColor({0, 255, 0});
     prog.setIntensity(1.0f);
+    engine.storeCue("main", 2.0f);
+    prog.clear();
 
     // New selection: group3 -> intensity full.
     prog.select(*engine.getGroup("group3"));
     prog.setColor({0, 255, 255});
     prog.setIntensity(1.0f);
+    engine.storeCue("main", 3.0f);
 
     std::cout << prog.describe() << '\n';
 
     // Store the programmer look as cue 1 in sequence "main", then clear the
     // programmer and recall the cue from playback.
-    engine.storeCue("main", 1.0f);
+    // engine.storeCue("main", 1.0f);
     std::cout << engine.sequence("main").describe() << '\n';
     prog.clear();
     engine.go("main");
@@ -49,6 +54,10 @@ int main()
     engine.setIP(Utils::Network::Interfaces::primaryIP());
     for (int frame = 0; frame < 400; ++frame)
     {
+        if(frame == 150 || frame == 300)
+        {
+            engine.go("main");
+        }
         engine.update();
         std::this_thread::sleep_for(std::chrono::milliseconds(25));
     }

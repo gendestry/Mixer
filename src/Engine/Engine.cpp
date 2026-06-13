@@ -70,6 +70,10 @@ namespace Core::Engine
         ctx.tick    = m_tick++;
         m_prevMs    = now;
 
+        // Clear last frame's output so anything not addressed this frame goes
+        // dark (non-tracking: each cue/look is a complete state).
+        m_patch.blackout();
+
         // Playback layer first: every active sequence renders its current cue.
         for (auto& [name, seq] : m_sequences)
             seq.apply(ctx, m_patch);

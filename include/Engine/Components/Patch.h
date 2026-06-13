@@ -60,6 +60,9 @@ namespace Core::Engine::Components
         [[nodiscard]] const std::vector<FixturePtr>& getFixturesByName(const std::string& name) const;
         [[nodiscard]] const std::map<uint16_t, FixturePtr>& fixtures() const { return m_fixtures; }
 
+        // Zero every universe's DMX values (keeps the patch). Frame-start reset.
+        void blackout() { for (auto& [id, uni] : m_universes) uni.blackout(); }
+
         // ---- dirty tracking ----
         [[nodiscard]] const std::set<uint16_t>& dirtyUniverses() const { return m_dirty; }
         void markDirty(uint16_t universe) { m_dirty.insert(universe); }
