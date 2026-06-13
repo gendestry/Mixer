@@ -14,6 +14,7 @@
 #include "Engine/Components/DMXOutput.h"
 #include "Engine/Components/Patch.h"
 #include "Engine/Programmer.h"
+#include "Show/Sequence.h"
 
 //
 // Engine: the top-level orchestrator. It owns the Patch (universes + fixtures),
@@ -28,6 +29,7 @@ namespace Core::Engine
         Components::Patch                        m_patch;
         Components::DMXOutput                    m_output;
         std::map<std::string, DMX::FixtureGroup> m_groups;
+        std::map<std::string, Show::Sequence>    m_sequences;
         Programmer                               m_programmer;
         Utils::Time::Timer                       m_clock;       // started at construction
         unsigned int                             m_prevMs = 0;
@@ -55,6 +57,11 @@ namespace Core::Engine
 
         // ---- programmer (live editing layer) ----
         [[nodiscard]] Programmer& programmer() { return m_programmer; }
+
+        // ---- sequences / cues ----
+        Show::Sequence& sequence(const std::string& name);          // get or create
+        void storeCue(const std::string& sequence, float number);   // programmer -> cue
+        void go(const std::string& sequence);                       // advance a sequence
 
         // ---- lookup ----
         [[nodiscard]] std::shared_ptr<Core::Fixture> getFixture(uint16_t fid);

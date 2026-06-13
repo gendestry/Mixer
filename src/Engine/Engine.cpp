@@ -44,6 +44,22 @@ namespace Core::Engine
         return m_patch.getUniverse(universe);
     }
 
+    Show::Sequence& Engine::sequence(const std::string& name)
+    {
+        auto [it, _] = m_sequences.try_emplace(name, name);
+        return it->second;
+    }
+
+    void Engine::storeCue(const std::string& sequenceName, float number)
+    {
+        sequence(sequenceName).store(m_programmer.makeCue(number));
+    }
+
+    void Engine::go(const std::string& sequenceName)
+    {
+        sequence(sequenceName).go(m_patch);
+    }
+
     void Engine::update()
     {
         // Advance the clock and build this frame's timing context.
@@ -54,7 +70,11 @@ namespace Core::Engine
         ctx.tick    = m_tick++;
         m_prevMs    = now;
 
-        // Render the live layer: the programmer writes its values + effects.
+        // Playback layer first: every active sequence renders its current cue.
+        for (auto& [name, seq] : m_sequences)
+            seq.apply(ctx, m_patch);
+
+        // Then the programmer on top (live edits win over playback).
         m_programmer.apply(ctx);
 
         // Compose virtual dimmers once, after every layer has written colour

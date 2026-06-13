@@ -37,6 +37,13 @@ int main()
 
     std::cout << prog.describe() << '\n';
 
+    // Store the programmer look as cue 1 in sequence "main", then clear the
+    // programmer and recall the cue from playback.
+    engine.storeCue("main", 1.0f);
+    std::cout << engine.sequence("main").describe() << '\n';
+    prog.clear();
+    engine.go("main");
+
     // Output + render loop ~40 fps.
     Utils::Network::Interfaces::scan();
     engine.setIP(Utils::Network::Interfaces::primaryIP());

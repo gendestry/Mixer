@@ -30,32 +30,67 @@ namespace Core::Effects
         }
     }
 
+    // ---- ColorEffect ----
     void ColorEffect::apply(const TimeContext&)
     {
-        m_group->setColor(m_color);
+        m_group.setColor(m_color);
     }
 
+    Spec ColorEffect::spec() const
+    {
+        Spec s;
+        s.kind   = Kind::ColorEffect;
+        s.fids   = targetFids();
+        s.colorA = m_color;
+        return s;
+    }
+
+    // ---- DimmerEffect ----
     void DimmerEffect::apply(const TimeContext&)
     {
         // Sets the intensity level only. Virtual-dimmer composition happens
         // once per frame in Engine::update(), after all layers have written.
-        for (const auto& f : m_group->fixtures())
+        for (const auto& f : m_group.fixtures())
             f->setIntensity(m_level);
     }
 
+    Spec DimmerEffect::spec() const
+    {
+        Spec s;
+        s.kind  = Kind::DimmerEffect;
+        s.fids  = targetFids();
+        s.level = m_level;
+        return s;
+    }
+
+    // ---- ColorFade ----
     void ColorFade::apply(const TimeContext& t)
     {
         const float p = t.phase(m_hz);
         const float ping = p < 0.5f ? p * 2.0f : (1.0f - p) * 2.0f;   // 0..1..0
-        m_group->setColor(lerp(m_a, m_b, ping));
+        m_group.setColor(lerp(m_a, m_b, ping));
     }
 
-    DimmerChase::DimmerChase(DMX::FixtureGroup& g, Utils::Maths::Type type, float bpm, float spread, uint16_t resolution)
-        : Effect(g), m_curve(Utils::Maths::getCurveByType(type, resolution)), m_bpm(bpm), m_spread(spread) {}
+    Spec ColorFade::spec() const
+    {
+        Spec s;
+        s.kind   = Kind::ColorFade;
+        s.fids   = targetFids();
+        s.colorA = m_a;
+        s.colorB = m_b;
+        s.bpm    = m_hz * 60.0f;
+        return s;
+    }
+
+    // ---- DimmerChase ----
+    DimmerChase::DimmerChase(DMX::FixtureGroup g, Utils::Maths::Type type, float bpm, float spread, uint16_t resolution)
+        : Effect(std::move(g)),
+          m_curve(Utils::Maths::getCurveByType(type, resolution)),
+          m_type(type), m_bpm(bpm), m_spread(spread) {}
 
     void DimmerChase::apply(const TimeContext& t)
     {
-        const auto& fixtures = m_group->fixtures();
+        const auto& fixtures = m_group.fixtures();
         const std::size_t n = fixtures.size();
         if (n == 0) return;
 
@@ -68,5 +103,16 @@ namespace Core::Effects
             const float level = sampleCurve(*m_curve, pos);
             fixtures[i]->setIntensity(level);   // vdimmer composed in Engine::update()
         }
+    }
+
+    Spec DimmerChase::spec() const
+    {
+        Spec s;
+        s.kind   = Kind::DimmerChase;
+        s.fids   = targetFids();
+        s.curve  = m_type;
+        s.bpm    = m_bpm;
+        s.spread = m_spread;
+        return s;
     }
 }

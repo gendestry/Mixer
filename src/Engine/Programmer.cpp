@@ -1,7 +1,9 @@
 #include "Engine/Programmer.h"
 
 #include <algorithm>
+#include <utility>
 
+#include "Effects/EffectFactory.h"
 #include "Fixture/Fixture.h"
 
 namespace Core::Engine
@@ -29,45 +31,82 @@ namespace Core::Engine
         m_latched = false;
     }
 
+    std::vector<uint16_t> Programmer::selectionFids() const
+    {
+        std::vector<uint16_t> fids;
+        fids.reserve(m_selection.size());
+        for (const auto& f : m_selection)
+            fids.push_back(f->fid());
+        return fids;
+    }
+
+    DMX::FixtureGroup Programmer::selectionGroup() const
+    {
+        DMX::FixtureGroup g("programmer");
+        for (const auto& f : m_selection)
+            g.add(f);
+        return g;
+    }
+
     void Programmer::setColor(const Utils::Colors::RGB& color)
     {
         for (const auto& f : m_selection)
+        {
             m_values[f].color = color;
+            m_driven.insert(f);
+        }
         touch();
     }
 
     void Programmer::setIntensity(float level)
     {
         for (const auto& f : m_selection)
+        {
             m_values[f].intensity = level;
+            m_driven.insert(f);
+        }
         touch();
     }
 
-    DMX::FixtureGroup& Programmer::snapshotSelection()
+    Effects::Effect* Programmer::addEffect(Effects::Spec spec)
     {
-        m_effectGroups.emplace_back("programmer");
-        DMX::FixtureGroup& g = m_effectGroups.back();
+        spec.fids = selectionFids();
         for (const auto& f : m_selection)
-            g.add(f);
-        return g;
+            m_driven.insert(f);
+
+        auto live = Effects::EffectFactory::build(spec, selectionGroup());
+        Effects::Effect* raw = m_effects.add(std::move(live));
+        touch();
+        return raw;
     }
 
     Effects::DimmerChase* Programmer::addDimmerChase(float bpm, Utils::Maths::Type type)
     {
-        return addEffect<Effects::DimmerChase>(type, bpm);
+        Effects::Spec spec;
+        spec.kind  = Effects::Kind::DimmerChase;
+        spec.curve = type;
+        spec.bpm   = bpm;
+        return static_cast<Effects::DimmerChase*>(addEffect(spec));
+    }
+
+    Show::Cue Programmer::makeCue(float number) const
+    {
+        Show::Cue cue;
+        cue.number = number;
+        for (const auto& [fix, values] : m_values)
+            cue.values[fix->fid()] = values;
+        for (const auto& fx : m_effects.effects())
+            cue.effects.push_back(fx->spec());
+        return cue;
     }
 
     void Programmer::apply(const Effects::TimeContext& t)
     {
         const Utils::Colors::RGB white{255, 255, 255};
 
-        // 1. Default colour = white for every fixture the programmer drives, so
-        //    intensity with no programmed colour still produces (white) light.
-        for (auto& [fix, st] : m_values)
-            fix->setColor(white);
-        for (auto& g : m_effectGroups)
-            for (const auto& f : g.fixtures())
-                f->setColor(white);
+        // 1. Default colour = white for every fixture the programmer drives.
+        for (const auto& f : m_driven)
+            f->setColor(white);
 
         // 2. Base values (override the white default where a colour was set).
         for (auto& [fix, st] : m_values)
@@ -85,7 +124,7 @@ namespace Core::Engine
     {
         m_selection.clear();
         m_values.clear();
-        m_effectGroups.clear();
+        m_driven.clear();
         m_effects.clear();
         m_latched = false;
     }

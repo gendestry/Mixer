@@ -35,5 +35,6 @@ namespace Core::Effects
         void update(const TimeContext& t);
 
         [[nodiscard]] std::size_t size() const { return m_effects.size(); }
+        [[nodiscard]] const std::vector<std::unique_ptr<Effect>>& effects() const { return m_effects; }
     };
 }

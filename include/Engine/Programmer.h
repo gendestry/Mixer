@@ -1,11 +1,10 @@
 #pragma once
 
-#include <list>
+#include <cstdint>
 #include <map>
 #include <memory>
-#include <optional>
+#include <set>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "Utils/Colors/RGB.h"
@@ -13,7 +12,10 @@
 
 #include "DMX/FixtureGroup.h"
 #include "Effects/EffectEngine.h"
+#include "Effects/EffectSpec.h"
 #include "Effects/Effects.h"
+#include "Fixture/Values.h"
+#include "Show/Cue.h"
 
 //
 // Programmer: the live editing layer, like grandMA3 / ChamSys. You build a
@@ -31,20 +33,15 @@ namespace Core::Engine
     {
         using FixturePtr = std::shared_ptr<Core::Fixture>;
 
-        struct State
-        {
-            std::optional<Utils::Colors::RGB> color;
-            std::optional<float>              intensity;
-        };
-
-        std::vector<FixturePtr>      m_selection;
-        bool                         m_latched = false;   // a value/effect was set since last select()
-        std::map<FixturePtr, State>  m_values;            // accumulated live values, per fixture
-        std::list<DMX::FixtureGroup> m_effectGroups;      // selection snapshots (stable refs for effects)
-        Effects::EffectEngine        m_effects;
+        std::vector<FixturePtr>            m_selection;
+        bool                               m_latched = false;   // edited since last select()
+        std::map<FixturePtr, Core::Values> m_values;            // accumulated live values
+        std::set<FixturePtr>               m_driven;            // every fixture the programmer touches
+        Effects::EffectEngine              m_effects;
 
         void touch() { m_latched = true; }
-        DMX::FixtureGroup& snapshotSelection();
+        [[nodiscard]] std::vector<uint16_t> selectionFids() const;
+        [[nodiscard]] DMX::FixtureGroup selectionGroup() const;
 
     public:
         // ---- selection ----
@@ -57,16 +54,12 @@ namespace Core::Engine
         void setColor(const Utils::Colors::RGB& color);
         void setIntensity(float level);
 
-        // ---- effects on the current selection (bound to a snapshot of it) ----
-        template<typename T, typename... Args>
-        T* addEffect(Args&&... args)
-        {
-            DMX::FixtureGroup& g = snapshotSelection();
-            T* fx = m_effects.emplace<T>(g, std::forward<Args>(args)...);
-            touch();
-            return fx;
-        }
+        // ---- effects on the current selection (built via the factory) ----
+        Effects::Effect* addEffect(Effects::Spec spec);
         Effects::DimmerChase* addDimmerChase(float bpm, Utils::Maths::Type type = Utils::Maths::SINUSOID);
+
+        // ---- store the current programmer state into a cue ----
+        [[nodiscard]] Show::Cue makeCue(float number) const;
 
         // ---- lifecycle ----
         void apply(const Effects::TimeContext& t);   // render the programmer this frame
