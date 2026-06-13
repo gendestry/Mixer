@@ -1,0 +1,261 @@
+@startuml architecture-suggested
+title Mixer — Suggested Architecture (DMX domain on lib/Utils, effects omitted)
+
+skinparam classAttributeIconSize 8
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam nodesep 12
+skinparam ranksep 45
+top to bottom direction
+skinparam class {
+    BackgroundColor White
+    BorderColor #2C3E50
+}
+
+legend top
+  + public   # protected   - private   {static} {abstract}
+  Grey = existing lib/Utils foundation (reused; members hidden).
+  White = Mixer DMX domain to (re)build on it.
+  <<NEW>> = type proposed here that does not exist yet.
+  (Effects layer intentionally omitted in this revision.)
+endlegend
+
+' =======================================================================
+' lib/Utils — FOUNDATION (already exists; class names only, no members)
+' =======================================================================
+package "lib/Utils :: foundation" #EEEEEE {
+    interface "Traits::Stringify" as Stringify
+    class "Utils::Fragment" as Fragment
+    class "Utils::FragmentedStorage<T,TSize>" as FragmentedStorage
+    class "Colors::RGB" as RGB
+    class "Colors::HSV" as HSV
+    class "Network::SacnSender" as SacnSender
+    class "Network::IP" as IP
+    class "Network::Interfaces" as Interfaces
+    class "Time::Timer" as Timer
+    class "Utils::Logger" as Logger
+    class "Utils::String" as UString
+    class "File" as File
+    class "Regex::Matcher" as Matcher
+}
+
+' keep the foundation as a tall, narrow column (vertical layout hint)
+Stringify -[hidden]down-> Fragment
+Fragment -[hidden]down-> FragmentedStorage
+FragmentedStorage -[hidden]down-> RGB
+RGB -[hidden]down-> HSV
+HSV -[hidden]down-> SacnSender
+SacnSender -[hidden]down-> IP
+IP -[hidden]down-> Interfaces
+Interfaces -[hidden]down-> Timer
+Timer -[hidden]down-> Logger
+Logger -[hidden]down-> UString
+UString -[hidden]down-> File
+File -[hidden]down-> Matcher
+
+' =======================================================================
+' DMX :: Parameters — typed views over the universe buffer
+' =======================================================================
+package "DMX :: Parameters" {
+    enum Type {
+        NONE = 0
+        DIMMER = 1
+        COLOR = 2
+        POSITION = 4
+        VDIMMER = 8
+    }
+    abstract class Parameter {
+        #m_type : Type
+        #m_bytes : uint8_t*
+        #m_baseOffset : uint32_t
+        #m_size : size_t
+        #m_bytes_per_type : uint8_t
+        #m_offsets : map<string, uint16_t>
+        +Parameter(bytes : uint8_t*, baseOffset : uint32_t)
+        +getType() const : Type
+        +getSize() const : size_t
+        +setBuffer(bytes : uint8_t*) : void
+        +setOffset(offset : uint32_t) : void
+        +setValue(key : string, pct : float) : void
+        +multiplyValue(key : string, pct : float) : void
+        +getValue(key : string) : optional<float>
+    }
+    class "ColorParameter<TBytes, ColorType...>" as ColorParameter {
+        -m_original : array<uint8_t, k_size*TBytes>
+        +{static} k_size : size_t
+        +applyDimmer(pct : float) : void
+    }
+    class "DimmerParameter<TBytes, ...>" as DimmerParameter
+    class "PositionParameter<TBytes, ...>" as PositionParameter
+    class VDimmerParameter {
+        -m_colorParam : Parameter*
+        +bind(color : Parameter*) : void
+    }
+}
+
+Stringify <|.. Parameter
+Parameter <|-- ColorParameter
+Parameter <|-- DimmerParameter
+Parameter <|-- PositionParameter
+Parameter <|-- VDimmerParameter
+ColorParameter ..> RGB
+VDimmerParameter ..> ColorParameter
+
+' =======================================================================
+' DMX :: core — Fixture / Universe / Group
+' =======================================================================
+package "DMX :: core" {
+    class Fixture {
+        -m_Parameters : list<shared_ptr<Parameter>>
+        -m_indexes : map<Type, list<shared_ptr<Parameter>>>
+        -m_universe : uint8_t
+        -vDimRequired : bool
+        +Fixture(name : string)
+        +add<T>() : void
+        +addMultiple<T>(amount : uint16_t) : void
+        +setStart(st : uint32_t) : void
+        +setBuffer(buf : uint8_t*) : void
+        +getParameters(type : Type) : list<shared_ptr<Parameter>>&
+        +setIntensity(pct : float) : void
+        +getBytes() : uint8_t*
+    }
+    class Universe {
+        -m_universeID : uint16_t
+        -m_fixturesByName : map<string, list<shared_ptr<Fixture>>>
+        +Universe(id : uint16_t)
+        +addFixture(fix : shared_ptr<Fixture>, start : optional<uint32_t>) : void
+        +getUniverseID() const : uint16_t
+        +getLight(index : size_t) : shared_ptr<Fixture>&
+    }
+    class FixtureGroup {
+        -name : string
+        -m_fixtures : vector<shared_ptr<Fixture>>
+        -m_usedUniverses : set<uint8_t>
+        -m_parameters : map<Type, vector<shared_ptr<Parameter>>>
+        +add(fix : shared_ptr<Fixture>) : void
+        +get() const : vector<shared_ptr<Fixture>>&
+        +size() const : size_t
+        +getUsedUniverses() const : set<uint8_t>&
+        +getParameters(type : Type) : vector<shared_ptr<Parameter>>&
+    }
+}
+
+Fragment <|-- Fixture
+Stringify <|.. Fixture
+FragmentedStorage <|-- Universe
+Stringify <|.. Universe
+Fixture "1" *-- "many" Parameter
+Universe "1" *-- "many" Fixture
+FixtureGroup "1" o-- "many" Fixture
+FixtureGroup ..> Parameter
+
+' =======================================================================
+' DMX :: output — transport abstraction (NEW interface)
+' =======================================================================
+package "DMX :: output" {
+    interface IOutputSink <<NEW>> {
+        +{abstract} setUniverse(id : uint8_t) : void
+        +{abstract} send(buffer : array<uint8_t,512>&) : void
+        +{abstract} setIP(ip : IP&) : void
+    }
+    class SacnOutput <<NEW>> {
+        -m_sender : SacnSender
+        +setUniverse(id : uint8_t) : void
+        +send(buffer : array<uint8_t,512>&) : void
+        +setIP(ip : IP&) : void
+    }
+    class ArtNetOutput <<NEW, future>>
+}
+IOutputSink <|.. SacnOutput
+IOutputSink <|.. ArtNetOutput
+SacnOutput *-- SacnSender
+
+' =======================================================================
+' Engine :: Components
+' =======================================================================
+package "Engine :: Components" {
+    class FixtureLibrary {
+        -m_fixtures : map<string, Fixture>
+        -fileRead : bool
+        +add(fix : Fixture&) : void
+        +readFromFile(path : string) : bool
+        +get(name : string) : optional<Fixture>
+    }
+    class Patch {
+        -m_fixtureLibrary : FixtureLibrary
+        -m_universes : map<uint16_t, Universe>
+        -m_fixtures : map<uint16_t, shared_ptr<Fixture>>
+        -m_usedFids : set<uint16_t>
+        -m_dirtyUniverses : set<uint8_t>
+        +patch(name : string, uni : uint8_t, amount : uint16_t) : vector<uint16_t>
+        +getUniverse(uni : uint8_t) : Universe&
+        +getFixtureByFID(fid : uint16_t) : shared_ptr<Fixture>
+        +getFixturesByFIDS(fids : vector<uint16_t>) : list<shared_ptr<Fixture>>
+        +dirtyUniverses() const : set<uint8_t>&
+        +clearDirty() : void
+    }
+    class GroupManager {
+        -m_groups : map<string, FixtureGroup>
+        +addToGroup(name : string, fixs : list<shared_ptr<Fixture>>) : void
+        +group(name : string) : FixtureGroup&
+    }
+    class DMXOutput {
+        -m_sinks : map<uint16_t, unique_ptr<IOutputSink>>
+        -m_ip : IP
+        +setIP(ip : string) : void
+        +ensureSink(universe : uint16_t) : void
+        +update(dirty : set<uint8_t>&, patch : Patch&) : void
+    }
+}
+
+Patch *-- FixtureLibrary
+Patch *-- Universe
+GroupManager *-- FixtureGroup
+DMXOutput o-- IOutputSink
+DMXOutput ..> Patch
+FixtureLibrary o-- Fixture
+FixtureLibrary ..> File
+FixtureLibrary ..> Matcher
+FixtureLibrary ..> UString
+
+' =======================================================================
+' Engine :: orchestration + Programmer (effect hooks omitted)
+' =======================================================================
+package "Engine" {
+    class Programmer {
+        -m_selected : optional<FixtureGroup>
+        +selectGroup(g : FixtureGroup&) : void
+        +newGroupSelection() : void
+    }
+    class Engine {
+        -m_patch : Patch
+        -m_groups : GroupManager
+        -m_output : DMXOutput
+        -m_log : Logger
+        +prog : Programmer
+        +Engine()
+        +Engine(libPath : string)
+        +setIP(ip : string) : void
+        +patch(fix : Fixture&, uni : uint8_t, amount : uint16_t) : vector<uint16_t>
+        +addToGroup(name : string, fids : vector<uint16_t>) : void
+        +getFixtureGroup(name : string) : FixtureGroup&
+        +update() : void
+    }
+}
+
+Engine *-- Patch
+Engine *-- GroupManager
+Engine *-- DMXOutput
+Engine *-- Programmer
+Engine o-- Logger
+Programmer ..> FixtureGroup
+
+note bottom of Engine
+  • Generic infra (Fragment, Colors, SACN, Time, Text) comes from lib/Utils.
+  • IOutputSink wraps Utils::Network::SacnSender -> ArtNet swappable.
+  • Patch is the single source of truth for dirty universes.
+  • Stringify (Utils) replaces old Printable + Serializable.
+  • Effects layer (EffectEngine/EffectFactory/TimeContext) to be added later.
+end note
+
+@enduml

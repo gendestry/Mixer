@@ -1,66 +1,42 @@
-//
-// Created by bobi on 25/09/2025.
-//
-
 #pragma once
-#include<fstream>
-#include <ranges>
+
 #include <string>
 #include <unordered_map>
-#include <format>
 
-#include "DMX/Fixture/Fixture.h"
+#include "Fixture/Fixture.h"
+#include "Fixture/Parameters/Descriptor.h"
 
-namespace Components {
-    class FixtureLibrary : public Traits::Printable
+//
+// FixtureLibrary: the catalogue of fixture *definitions* (personalities). Each
+// entry is a Core::Fixture template built once (programmatically now, from a
+// file later) and copied whenever it is patched into a universe.
+//
+// It also owns a DescriptorStore so parameter layouts built at runtime (from a
+// file) are interned here and outlive the fixtures that reference them.
+//
+namespace Core::Engine::Components
+{
+    class FixtureLibrary
     {
-        bool fileRead = false;
-        std::unordered_map<std::string, DMX::Fixture> m_fixtures;
+        std::unordered_map<std::string, Core::Fixture> m_fixtures;  // name -> definition
+        Parameters::DescriptorStore                    m_descriptors;
 
-        static bool addFixtureParameter(DMX::Fixture& fixture, const std::string name)
-        {
-            if (name == "RGB")
-            {
-                fixture.add<DMX::Parameters::ColorRGB>();
-            }
-            else if (name == "Dimmer")
-            {
-                fixture.add<DMX::Parameters::Dimmer>();
-            }
-            else
-            {
-                return false;
-            }
-
-            return true;
-
-        }
     public:
+        // Create (or fetch) an empty definition under `name` and return it by
+        // reference so the caller can stack parameters onto it.
+        Core::Fixture& define(const std::string& name);
 
-        void add(const DMX::Fixture& fix);
-        void add(DMX::Fixture&& fixture);
-        void readFromFile(const std::string& path);
+        // Register a fully-built definition (keyed by its own name, or explicitly).
+        void add(const Core::Fixture& fixture);
+        void add(const std::string& name, const Core::Fixture& fixture);
 
-        std::optional<DMX::Fixture> get(const std::string& name)
-        {
-            if (m_fixtures.contains(name))
-            {
-                return m_fixtures[name];
-            }
+        [[nodiscard]] const Core::Fixture* get(const std::string& name) const;
+        [[nodiscard]] bool has(const std::string& name) const;
+        [[nodiscard]] std::size_t size() const { return m_fixtures.size(); }
 
-            return std::nullopt;
-        }
+        // Interning point for runtime/file-built parameter layouts.
+        [[nodiscard]] Parameters::DescriptorStore& descriptors() { return m_descriptors; }
 
-        [[nodiscard]] std::string describe() const override
-        {
-            std::stringstream ss;
-            ss << "[Fixture Library]: " << m_fixtures.size() << " in library" << std::endl;
-            for (const auto&[key, value] : m_fixtures)
-            {
-                ss << " - " << value.describe() << std::endl;
-            }
-
-            return ss.str();
-        }
+        [[nodiscard]] std::string describe() const;
     };
 }

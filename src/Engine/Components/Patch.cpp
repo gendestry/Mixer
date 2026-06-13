@@ -1,136 +1,110 @@
-//
-// Created by bobi on 27. 01. 26.
-//
-
 #include "Engine/Components/Patch.h"
-#include <sstream>
 
-namespace Components {
-    void Patch::readFixtureLib(const std::string &filepath) {
-        m_fixtureLibrary.readFromFile(filepath);
+#include <utility>
+
+namespace Core::Engine::Components
+{
+    Core::DMX::Universe& Patch::ensureUniverse(uint16_t universe)
+    {
+        auto it = m_universes.find(universe);
+        if (it == m_universes.end())
+            it = m_universes.try_emplace(universe, universe).first;
+        return it->second;
     }
 
-    std::vector<uint16_t> Patch::patch(DMX::Fixture &fixture, uint8_t universe, uint16_t amount,
-                                       std::optional<uint16_t> address, std::optional<uint16_t> startFID) {
-        uint16_t fid = startFID.has_value() ? startFID.value() : universe * 100 + 1;
-        std::vector<uint16_t> ret;
-        bool canUseFid = true;
-        for (uint16_t i = 0; i < amount; ++i) {
-            if (m_usedFids.contains(fid + i)) {
-                canUseFid = false;
-                break;
-            }
+    uint16_t Patch::nextFreeFid() const
+    {
+        uint16_t fid = 1;
+        while (m_usedFids.contains(fid)) ++fid;
+        return fid;
+    }
+
+    void Patch::registerFixture(uint16_t fid, const FixturePtr& fixture)
+    {
+        fixture->setFid(fid);
+        fixture->ensureVirtualDimmer();   // color-only fixtures get a virtual dimmer
+        m_fixtures[fid] = fixture;
+        m_usedFids.insert(fid);
+        m_byName[fixture->name()].push_back(fixture);
+    }
+
+    std::vector<uint16_t> Patch::patch(const std::string& fixtureName, uint16_t universe, uint16_t amount,
+                                       std::optional<uint32_t> start, std::optional<uint16_t> startFID)
+    {
+        const Core::Fixture* def = m_library.get(fixtureName);
+        if (def == nullptr) return {};
+        return patch(*def, universe, amount, start, startFID);
+    }
+
+    std::vector<uint16_t> Patch::patch(const Core::Fixture& fixture, uint16_t universe, uint16_t amount,
+                                       std::optional<uint32_t> start, std::optional<uint16_t> startFID)
+    {
+        if (amount == 0) return {};
+
+        Core::DMX::Universe& uni = ensureUniverse(universe);
+
+        std::vector<FixturePtr> placed;
+        if (start.has_value())
+        {
+            placed = uni.addFixtures(fixture, amount, *start);
+        }
+        else
+        {
+            placed.reserve(amount);
+            for (uint16_t i = 0; i < amount; ++i)
+                placed.push_back(uni.addFixture(fixture));
         }
 
-        if (!canUseFid) {
-            throw std::runtime_error("FIDS are in use");
+        std::vector<uint16_t> fids;
+        fids.reserve(placed.size());
+        uint16_t fid = startFID.value_or(nextFreeFid());
+        for (const auto& f : placed)
+        {
+            if (f == nullptr) continue;          // placement failed (overlap / full)
+            while (m_usedFids.contains(fid)) ++fid;
+            registerFixture(fid, f);
+            fids.push_back(fid);
+            ++fid;
         }
 
-        uint16_t offset = 0;
-        for (uint16_t i = 0; i < amount; i++) {
-            std::shared_ptr<DMX::Fixture> fix = std::make_shared<DMX::Fixture>(fixture);
-
-            ret.push_back(fid);
-            fix->id = fid;
-            fix->m_universe = universe;
-            m_fixtures[fid] = fix;
-            m_usedFids.insert(fid++);
-            // if (address.has_value()) {
-            //     address.value() += fixture.
-            // }
-            m_universes[universe].addFixture(fix, address);
-            m_universes[universe].setID(universe);
-            m_fixturesByName[fix->name].push_back(fix);
-        }
-
-        // if (!m_senders.contains(universe))
-        // {
-        //     SacnSender *sender = new SacnSender(universe, m_ip.c_str());
-        //     sender->setBuffer(m_universes[universe].getBytes());
-        //     m_senders[universe] = sender;
-        // }
-
-        return ret;
+        if (!fids.empty()) markDirty(universe);
+        return fids;
     }
 
-    std::vector<uint16_t> Patch::patch(const std::string &fixtureName, uint8_t universe, uint16_t amount,
-                                       std::optional<uint16_t> address, std::optional<uint16_t> startFID) {
-        auto fixture = m_fixtureLibrary.get(fixtureName);
-        if (fixture.has_value()) {
-            return patch(fixture.value(), universe, amount, address, startFID);
-        }
-
-        throw std::runtime_error("Could not find fixture " + fixtureName);
+    Core::DMX::Universe* Patch::getUniverse(uint16_t universe)
+    {
+        const auto it = m_universes.find(universe);
+        return it != m_universes.end() ? &it->second : nullptr;
     }
 
-    void Patch::setFixtureID(uint16_t currentFID, uint16_t newFID) {
-        m_usedFids.erase(currentFID);
-        m_usedFids.insert(newFID);
-        m_fixtures[currentFID]->id = newFID;
-        m_fixtures[newFID] = m_fixtures[currentFID];
-        // m_fixtures[currentFID
+    Patch::FixturePtr Patch::getFixture(uint16_t fid) const
+    {
+        const auto it = m_fixtures.find(fid);
+        return it != m_fixtures.end() ? it->second : nullptr;
     }
 
-    std::map<uint16_t, std::shared_ptr<DMX::Fixture> > &Patch::getFixtures() {
-        return m_fixtures;
+    std::vector<Patch::FixturePtr> Patch::getFixtures(const std::vector<uint16_t>& fids) const
+    {
+        std::vector<FixturePtr> out;
+        out.reserve(fids.size());
+        for (uint16_t fid : fids)
+            if (auto f = getFixture(fid)) out.push_back(std::move(f));
+        return out;
     }
 
-    DMX::Universe &Patch::getUniverse(uint8_t universe) {
-        return m_universes[universe];
+    const std::vector<Patch::FixturePtr>& Patch::getFixturesByName(const std::string& name) const
+    {
+        static const std::vector<FixturePtr> empty;
+        const auto it = m_byName.find(name);
+        return it != m_byName.end() ? it->second : empty;
     }
 
-    std::shared_ptr<DMX::Fixture> Patch::getFixtureByFID(uint16_t fid) {
-        for (auto &[key, value]: m_fixtures) {
-            if (value->id == fid) {
-                return value;
-            }
-        }
-
-        return nullptr;
-    }
-
-    std::vector<std::shared_ptr<DMX::Fixture> > &Patch::getFixturesByName(const std::string &name) {
-        return m_fixturesByName[name];
-    }
-
-    std::list<std::shared_ptr<DMX::Fixture> > Patch::getFixturesByFIDS(const std::vector<uint16_t> &fids) {
-        std::list<std::shared_ptr<DMX::Fixture> > ret;
-
-        for (auto fid: fids) {
-            ret.push_back(m_fixtures[fid]);
-        }
-        return ret;
-    }
-
-
-    std::vector<uint16_t> Patch::getFixturesFIDByName(const std::string &name) {
-        auto &fixs = getFixturesByName(name);
-        std::vector<uint16_t> ret;
-        for (auto &fix: fixs) {
-            ret.push_back(fix->id);
-        }
-
-        return ret;
-    }
-
-    std::string Patch::describe() const {
-        std::stringstream ss;
-        ss << m_fixtureLibrary.describe();
-
-        // for (auto &[key, value] : m_groups)
-        // {
-        //     ss << "Fixture group: " << key << std::endl;
-        //     const auto &fixs = value.get();
-        //     for (auto fix : fixs)
-        //     {
-        //         ss << " - " << fix->describe() << std::endl;
-        //     }
-        //     ss << std::endl;
-        // }
-        ss << "\n[Universes]" << std::endl;
-        for (const auto &[_, value]: m_universes) {
-            ss << value.describe();
-        }
-        return ss.str();
+    std::string Patch::describe() const
+    {
+        std::string s = "Patch [" + std::to_string(m_fixtures.size()) + " fixtures across "
+                      + std::to_string(m_universes.size()) + " universes]\n";
+        for (const auto& [id, uni] : m_universes)
+            s += uni.describe();
+        return s;
     }
 }

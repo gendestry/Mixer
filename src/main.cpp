@@ -1,64 +1,66 @@
-//
-// Created by bobi on 10/09/2025.
-//
-
+#include "Engine/Components/Patch.h"
+#include "DMX/FixtureGroup.h"
 #include <iostream>
-#include "Engine/Engine.h"
-#include <bits/this_thread_sleep.h>
-#include "Helper/Utils.h"
-#include "Helper/Colors.h"
-#include "Helper/Curve.h"
-#include "Helper/NetworkUtils.h"
-#include <print>
 
-int main() {
-    using namespace DMX;
+using namespace Core;
 
-    // Engine engine("testfile.txt");
-    Engine engine;
-    engine.setIP("192.168.0.6");
-    // engine.patch("par", 8, 2, 1);
-    Fixture fixture("pixel");
-    fixture.add<Parameters::ColorRGB>();
+int main()
+{
+    Engine::Components::Patch patch;
 
+    // --------------------------------------------------------------------
+    // 1. Define fixture personalities in the library.
+    // --------------------------------------------------------------------
+    // "par": a real dimmer + RGB (4 channels). setIntensity drives the
+    // dimmer channel directly.
+    Fixture& par = patch.library().define("par");
+    par.add(Parameters::Presets::Dimmer());
+    par.add(Parameters::Presets::ColorRGB());
 
-    // engine.addToGroup("all", engine.patch("par", 8, 3, 2));
-    engine.addToGroup("all", engine.patch(fixture, 8, 93));
-    engine.addToGroup("all", engine.patch(fixture, 9, 120));
+    // "pixel": RGB only (3 channels). Having color but no dimmer, it gets a
+    // virtual dimmer automatically when patched - intensity is applied by
+    // scaling the colour in HSV space.
+    Fixture& pixel = patch.library().define("pixel");
+    pixel.add(Parameters::Presets::ColorRGB());
 
-    engine.prog.selectGroup(engine.getFixtureGroup("all"));
-    engine.prog.selectGroup(engine.getFixtureGroup("neki"));
-    engine.prog.setDimmer(100.f);
-    // auto x = engine.prog.addDimmerChase();
-    // x->m_curve->setPeaks(2);
-    // engine.prog.setColor({0, 255, 255});
+    std::cout << patch.library().describe() << "\n\n";
 
+    // --------------------------------------------------------------------
+    // 2. Patch fixtures into universe 1.
+    // --------------------------------------------------------------------
+    auto parFids   = patch.patch("par",   /*universe*/ 1, /*amount*/ 4); // FIDs 1..4  @ ch 0,4,8,12
+    auto pixelFids = patch.patch("pixel", /*universe*/ 1, /*amount*/ 3); // FIDs 5..7  @ ch 16,19,22
 
-    engine.prog.newGroupSelection();
-    engine.prog.selectGroup(engine.getFixtureGroup("all"));
+    std::cout << "par FIDs:   ";
+    for (auto f : parFids)   std::cout << f << ' ';
+    std::cout << "\npixel FIDs: ";
+    for (auto f : pixelFids) std::cout << f << ' ';
+    std::cout << "\n\n";
 
-    engine.prog.newGroupSelection();
-    engine.prog.selectGroup(engine.getFixtureGroup("neki"));
-    engine.prog.setColorFan({255, 128, 0}, {255, 20, 0});
+    // --------------------------------------------------------------------
+    // 3a. Group the pars; red at 50% via the REAL dimmer channel.
+    // --------------------------------------------------------------------
+    DMX::FixtureGroup pars("pars");
+    pars.add(patch.getFixtures(parFids));
+    pars.setColor({255, 0, 0});
+    pars.setIntensity(0.5f);          // writes the dimmer channel to 128
 
+    // --------------------------------------------------------------------
+    // 3b. Group the pixels; cyan-ish at 50% via the VIRTUAL dimmer.
+    // --------------------------------------------------------------------
+    DMX::FixtureGroup pixels("pixels");
+    pixels.add(patch.getFixtures(pixelFids));
+    pixels.setColor({0, 128, 255});
+    pixels.setIntensity(0.5f);        // stores the virtual-dimmer level only
+    pixels.applyVirtualDimmers();     // composes colour * level into the buffer
 
-    auto *fx = engine.addEffectDimmerChase("all", Utils::Curve::SINUSOID);
-    fx->setBPM(60);
-    // engine.update();
-    // fx->m_curve->setPeaks(4);
-    // fx->m_curve->setMax(0.5f);
-    // engine.addDimmer("all", 100);
-    // engine.addEffectDimmerGroup("all");
-    // engine.addColor("all", {255, 128, 0});
-    // auto f = engine.addEffect2Color("all", {255, 0, 0}, {0, 0, 255});
-    // f->m_peaks = 3;
-    // engine.addEffectColorGradient("all", {Utils::Colors::Red, Utils::Colors::Yellow, Utils::Colors::Blue}, {0.2, 0.6, 0.2});
-    for (int i = 0; i < 10000; i++) {
-        engine.update();
-        std::this_thread::sleep_for(std::chrono::microseconds(16667));
-    }
-
-    std::cout << engine.describe();
+    // --------------------------------------------------------------------
+    // 4. Inspect.
+    // --------------------------------------------------------------------
+    std::cout << pars.describe()   << "\n\n";
+    std::cout << pixels.describe() << "\n\n";
+    std::cout << patch.getUniverse(1)->describe() << '\n';
+    std::cout << patch.getUniverse(1)->bytesToString() << '\n';
 
     return 0;
 }

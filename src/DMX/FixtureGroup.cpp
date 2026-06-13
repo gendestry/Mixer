@@ -1,148 +1,93 @@
-//
-// Created by Bobi on 9/22/25.
-//
+#include "DMX/FixtureGroup.h"
 
-#include "FixtureGroup.h"
+#include <algorithm>
+#include <utility>
 
-namespace DMX
+namespace Core::DMX
 {
-    void FixtureGroup::addParameters(const std::shared_ptr<Fixture>& fixture)
+    FixtureGroup::FixtureGroup(std::string name) : m_name(std::move(name)) {}
+
+    void FixtureGroup::indexParameters(const FixturePtr& fixture)
     {
-        using namespace Parameters;
-
-        auto colorParams = fixture->getParameters(Type::COLOR);
-        if (colorParams.has_value())
-        {
-            for (auto& param : colorParams.value())
-            {
-                m_parameters[Type::COLOR].push_back(param);
-            }
-        }
-
-        auto dimmerParams = fixture->getParameters(Type::DIMMER);
-        if (dimmerParams.has_value())
-        {
-            for (auto& param : dimmerParams.value())
-            {
-                m_parameters[Type::DIMMER].push_back(param);
-            }
-        }
-
-        auto positionParams = fixture->getParameters(Type::POSITION);
-        if (positionParams.has_value())
-        {
-            for (auto& param : positionParams.value())
-            {
-                m_parameters[Type::POSITION].push_back(param);
-            }
-        }
+        for (const auto& p : fixture->parameters())
+            m_parameters[p->getType()].push_back(p);
     }
 
-    void FixtureGroup::addParameters(const std::list<std::shared_ptr<Fixture>>& fixtures)
+    bool FixtureGroup::contains(const FixturePtr& fixture) const
     {
-        for (auto& fixture : fixtures)
-        {
-            addParameters(fixture);
-        }
+        return std::find(m_fixtures.begin(), m_fixtures.end(), fixture) != m_fixtures.end();
     }
 
-    void FixtureGroup::addParameters(const std::vector<std::shared_ptr<Fixture>>& fixtures)
+    void FixtureGroup::add(const FixturePtr& fixture)
     {
-        for (auto& fixture : fixtures)
-        {
-            addParameters(fixture);
-        }
+        if (fixture == nullptr || contains(fixture)) return;
+        m_fixtures.push_back(fixture);
+        m_usedUniverses.insert(fixture->universe());
+        indexParameters(fixture);
     }
 
-    void FixtureGroup::clearParameters()
+    void FixtureGroup::add(const std::vector<FixturePtr>& fixtures)
     {
+        for (const auto& f : fixtures) add(f);
+    }
+
+    void FixtureGroup::add(const FixtureGroup& other)
+    {
+        add(other.m_fixtures);
+    }
+
+    void FixtureGroup::clear()
+    {
+        m_fixtures.clear();
+        m_usedUniverses.clear();
         m_parameters.clear();
     }
 
-
-    void FixtureGroup::add(const std::shared_ptr<DMX::Fixture>& fixture)
+    const std::vector<FixtureGroup::ParamPtr>& FixtureGroup::parameters(Parameters::Type t) const
     {
-        m_usedUniverses.insert(fixture->m_universe);
-        m_fixtures.push_back(fixture);
-        addParameters(fixture);
+        static const std::vector<ParamPtr> empty;
+        const auto it = m_parameters.find(t);
+        return it != m_parameters.end() ? it->second : empty;
     }
 
-    void FixtureGroup::add(const std::list<std::shared_ptr<DMX::Fixture>>& fixs)
+    bool FixtureGroup::has(Parameters::Type t) const
     {
-        m_fixtures.insert(m_fixtures.end(), fixs.begin(), fixs.end());
-        for(auto fix : fixs)
-        {
-            m_usedUniverses.insert(fix->m_universe);
-        }
-        addParameters(fixs);
+        return m_parameters.contains(t);
     }
 
-    const std::vector<std::shared_ptr<DMX::Fixture>>& FixtureGroup::get()
+    void FixtureGroup::setColor(const Utils::Colors::RGB& color)
     {
-        return m_fixtures;
+        for (const auto& f : m_fixtures) f->setColor(color);
     }
 
-    size_t FixtureGroup::size() const
+    void FixtureGroup::setIntensity(float norm)
     {
-        return m_fixtures.size();
+        for (const auto& f : m_fixtures) f->setIntensity(norm);
     }
 
-
-    FixtureGroup& FixtureGroup::operator=(const std::vector<std::shared_ptr<DMX::Fixture>> &fixtures)
+    void FixtureGroup::applyVirtualDimmers()
     {
-        this->m_fixtures = fixtures;
-        // clearParameters();
-        // add
+        for (const auto& f : m_fixtures) f->applyVirtualDimmers();
+    }
+
+    FixtureGroup& FixtureGroup::operator+=(const FixturePtr& fixture)
+    {
+        add(fixture);
         return *this;
     }
 
-    FixtureGroup& FixtureGroup::operator+=(const std::shared_ptr<DMX::Fixture>& fixture)
+    FixtureGroup& FixtureGroup::operator+=(const FixtureGroup& other)
     {
-        this->m_fixtures.push_back(fixture);
-        this->m_usedUniverses.insert(fixture->m_universe);
-        addParameters(fixture);
+        add(other);
         return *this;
     }
 
-    FixtureGroup& FixtureGroup::operator+=(const std::list<std::shared_ptr<DMX::Fixture>> &fixtures)
+    std::string FixtureGroup::describe() const
     {
-        this->m_fixtures.insert(this->m_fixtures.end(), fixtures.begin(), fixtures.end());
-        for(auto fix : fixtures)
-        {
-            this->m_usedUniverses.insert(fix->m_universe);
-        }
-        addParameters(fixtures);
-        return *this;
+        std::string s = "Group \"" + m_name + "\" [" + std::to_string(m_fixtures.size())
+                      + " fixtures, " + std::to_string(m_usedUniverses.size()) + " universes]";
+        for (const auto& f : m_fixtures)
+            s += "\n  - " + f->describe();
+        return s;
     }
-
-    FixtureGroup& FixtureGroup::operator+=(FixtureGroup &other)
-    {
-        auto otherLights = other.m_fixtures;
-        this->m_fixtures.insert(this->m_fixtures.end(), otherLights.begin(), otherLights.end());
-        for(auto fix : otherLights)
-        {
-            this->m_usedUniverses.insert(fix->m_universe);
-        }
-        addParameters(other.m_fixtures);
-        return *this;
-    }
-
-    // FixtureGroup& FixtureGroup::operator-=(const std::list<std::shared_ptr<DMX::Fixture>> &lights)
-    // {
-    //     this->m_fixtures.insert(this->m_fixtures.end(), lights.rbegin(), lights.rend());
-    //     return *this;
-    // }
-    //
-    // FixtureGroup& FixtureGroup::operator-=(FixtureGroup &other)
-    // {
-    //     auto otherLights = other();
-    //     this->m_fixtures.insert(this->m_fixtures.end(), otherLights.rbegin(), otherLights.rend());
-    //     return *this;
-    // }
-
-    const std::vector<std::shared_ptr<DMX::Fixture>>& FixtureGroup::operator()()
-    {
-        return m_fixtures;
-    }
-
 }

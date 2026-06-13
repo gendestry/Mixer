@@ -1,0 +1,223 @@
+@startuml architecture-current
+title Mixer — Current Architecture (as-is)
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+
+' ==================== TRAITS ====================
+package "Traits / Helper" {
+    interface Printable {
+        +describe() : string
+    }
+    interface Serializable {
+        +toString() : string
+    }
+
+    class "FragmentedStorage<T, TSize>" as FragmentedStorage {
+        -m_fragments : list<shared_ptr<T>>
+        -m_buffer : array<uint8_t, TSize>
+        -m_bytesPatched : array<uint16_t, TSize>
+        -m_fragmentsNum : uint16_t
+        +add(shared_ptr<T>, opt<uint32_t> start)
+        +getBytes() : uint8_t*
+    }
+    class Fragment {
+        +start : uint32_t
+        +size : uint32_t
+        +buffer : uint8_t*
+        +id : uint16_t
+        +name : string
+    }
+
+    class Colors <<static>> {
+        +rgbToHsv() / hsvToRgb()
+        +gradient() / makeGradient()
+    }
+    class "Curve::Interface" as CurveIface {
+        -m_values : vector<float>
+        -m_type : Type
+        +{abstract} fill()
+        +operator[]()
+    }
+    class Sinusoid
+    class Triangle
+    class Square
+    class Line
+    class Utils <<static>>
+    class NetworkUtils <<static>>
+}
+
+CurveIface <|-- Sinusoid
+CurveIface <|-- Triangle
+CurveIface <|-- Square
+CurveIface <|-- Line
+
+' ==================== PARAMETERS ====================
+package "DMX::Parameters" {
+    abstract class Parameter {
+        -m_bytes : uint8_t*
+        -m_baseOffset : uint32_t
+        -m_type : Type
+        -m_offsets : map<string,uint16_t>
+        +setValue(key, percentage)
+        +getValue(key) : opt<float>
+    }
+    class "ColorParameter<TBytes, ColorType...>" as ColorParameter
+    class "DimmerParameter<TBytes, ...>" as DimmerParameter
+    class "PositionParameter<TBytes, ...>" as PositionParameter
+    class VDimmerParameter {
+        -m_colorParam : Parameter*
+    }
+}
+
+Printable <|-- Parameter
+Parameter <|-- ColorParameter
+Parameter <|-- DimmerParameter
+Parameter <|-- PositionParameter
+Parameter <|-- VDimmerParameter
+VDimmerParameter ..> Parameter : binds color
+
+' ==================== DMX CORE ====================
+package "DMX" {
+    class Fixture {
+        -m_Parameters : list<shared_ptr<Parameter>>
+        -m_indexes : map<Type, list<...>>
+        -m_universe : uint8_t
+        +add<T>() / addMultiple<T>()
+        +getParameters(Type)
+    }
+    class Universe {
+        -m_universeID : uint16_t
+        -m_fixturesByName : map<string, list<...>>
+        +addFixture(shared_ptr<Fixture>, start)
+    }
+    class FixtureGroup {
+        -m_fixtures : vector<shared_ptr<Fixture>>
+        -m_usedUniverses : set<uint8_t>
+        -m_parameters : map<Type, vector<...>>
+        +getParameters(Type)
+    }
+    class SacnSender {
+        -m_socket : int
+        -m_packet : array<uint8_t,638>
+        -m_buffer : uint8_t*
+        +send()
+    }
+}
+
+Fragment <|-- Fixture
+Serializable <|-- Fixture
+FragmentedStorage <|-- Universe
+Printable <|-- Universe
+Fixture "1" *-- "many" Parameter : owns
+Universe "1" *-- "many" Fixture : packs (buffer slices)
+FixtureGroup "1" o-- "many" Fixture : references
+FixtureGroup ..> Parameter : caches by type
+SacnSender ..> Universe : reads buffer ptr
+
+' ==================== EFFECTS ====================
+package "Effect" {
+    class Effect {
+        -m_parameters : vector<shared_ptr<Parameter>>
+        -m_effectFunction : function<void(uint32_t)>
+        -m_type : Type
+        -bpm / tick
+        +update(t)
+    }
+    class ColorEffect
+    class ColorFanEffect
+    class FX2Color
+    class FXColorGradient
+    class DimmerEffect
+    class FXDimmerChase
+    class FXDimmerGrouped
+    class EffectHolder <<empty stub>>
+}
+
+Effect <|-- ColorEffect
+Effect <|-- ColorFanEffect
+Effect <|-- FX2Color
+Effect <|-- FXColorGradient
+Effect <|-- DimmerEffect
+Effect <|-- FXDimmerChase
+Effect <|-- FXDimmerGrouped
+Effect o-- Parameter : modifies (from group)
+FXDimmerChase *-- CurveIface
+FXDimmerGrouped *-- CurveIface
+Effect ..> Colors
+
+' ==================== ENGINE COMPONENTS ====================
+package "Engine::Components" {
+    class Patch {
+        -m_fixtureLibrary : FixtureLibrary
+        -m_universes : map<uint16_t, Universe>
+        -m_fixtures : map<uint16_t, shared_ptr<Fixture>>
+        -m_dirtyUniverses : set<uint8_t>
+        +patch(...)
+    }
+    class GroupManager {
+        -m_groups : map<string, FixtureGroup>
+        +addToGroup(...)
+    }
+    class DMXOutput {
+        -m_senders : map<uint16_t, SacnSender*>
+        -m_ip : string
+        +check(universe, bytes)
+        +update(dirtyUnis)
+    }
+    class FixtureLibrary {
+        -m_fixtures : map<string, Fixture>
+        +readFromFile(path)
+        +get(name)
+    }
+}
+
+Patch *-- FixtureLibrary
+Patch *-- Universe
+GroupManager *-- FixtureGroup
+DMXOutput *-- SacnSender
+FixtureLibrary o-- Fixture : definitions
+
+' ==================== ENGINE / PROGRAMMER ====================
+package "Engine" {
+    class Engine {
+        -m_dirtyUniverses : set<uint8_t>
+        -m_effects : vector<Effect*>  <<raw owning ptrs>>
+        -m_patch : Patch
+        -m_output : DMXOutput
+        -m_groupManager : GroupManager
+        +prog : Programmer
+        +patch(...) / addToGroup(...)
+        +addColor/addDimmer/addEffect*(...)
+        +update()
+    }
+    class Programmer {
+        -selectedGroups : opt<FixtureGroup>
+        -selectedEffects : list<shared_ptr<Effect>>
+        -states : list<State>
+        +selectGroup() / setColor() / setDimmer()
+        +update(tick)
+    }
+    class EffectEngine <<empty stub>>
+}
+
+Engine *-- Patch
+Engine *-- DMXOutput
+Engine *-- GroupManager
+Engine *-- Programmer
+Engine "1" *-- "many" Effect : owns via raw new
+Programmer "1" o-- "many" Effect : creates duplicate set
+Programmer ..> FixtureGroup
+
+note bottom of Engine
+  SMELLS (current):
+  • Engine owns effects via raw Effect* (leaks, no RAII)
+  • Effect creation duplicated in Engine AND Programmer
+  • EffectEngine + EffectHolder are empty stubs
+  • Dirty-universe state split across Engine and Patch
+  • Output hard-wired to SacnSender (no abstraction)
+  • update() ignores dt/tick (passes 0.f)
+end note
+
+@enduml
