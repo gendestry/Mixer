@@ -1,8 +1,8 @@
-#include "Fixture/Parameters/Parameter.h"
+#include "LightEngine/Fixture/Parameters/Parameter.h"
 
 #include <algorithm>
 
-namespace Core::Parameters
+namespace LightEngine::Parameters
 {
     std::shared_ptr<Parameter> Parameter::clone() const
     {

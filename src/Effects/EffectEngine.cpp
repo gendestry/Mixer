@@ -1,6 +1,6 @@
-#include "Effects/EffectEngine.h"
+#include "LightEngine/Effects/EffectEngine.h"
 
-namespace Core::Effects
+namespace LightEngine::Effects
 {
     Effect* EffectEngine::add(std::unique_ptr<Effect> fx)
     {

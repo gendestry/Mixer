@@ -1,9 +1,9 @@
-#include "DMX/FixtureGroup.h"
+#include "LightEngine/DMX/FixtureGroup.h"
 
 #include <algorithm>
 #include <utility>
 
-namespace Core::DMX
+namespace LightEngine::DMX
 {
     FixtureGroup::FixtureGroup(std::string name) : m_name(std::move(name)) {}
 

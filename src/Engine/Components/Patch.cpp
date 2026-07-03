@@ -1,10 +1,10 @@
-#include "Engine/Components/Patch.h"
+#include "LightEngine/Engine/Components/Patch.h"
 
 #include <utility>
 
-namespace Core::Engine::Components
+namespace LightEngine::Engine::Components
 {
-    Core::DMX::Universe& Patch::ensureUniverse(uint16_t universe)
+    LightEngine::DMX::Universe& Patch::ensureUniverse(uint16_t universe)
     {
         auto it = m_universes.find(universe);
         if (it == m_universes.end())
@@ -31,17 +31,17 @@ namespace Core::Engine::Components
     std::vector<uint16_t> Patch::patch(const std::string& fixtureName, uint16_t universe, uint16_t amount,
                                        std::optional<uint32_t> start, std::optional<uint16_t> startFID)
     {
-        const Core::Fixture* def = m_library.get(fixtureName);
+        const LightEngine::Fixture* def = m_library.get(fixtureName);
         if (def == nullptr) return {};
         return patch(*def, universe, amount, start, startFID);
     }
 
-    std::vector<uint16_t> Patch::patch(const Core::Fixture& fixture, uint16_t universe, uint16_t amount,
+    std::vector<uint16_t> Patch::patch(const LightEngine::Fixture& fixture, uint16_t universe, uint16_t amount,
                                        std::optional<uint32_t> start, std::optional<uint16_t> startFID)
     {
         if (amount == 0) return {};
 
-        Core::DMX::Universe& uni = ensureUniverse(universe);
+        LightEngine::DMX::Universe& uni = ensureUniverse(universe);
 
         std::vector<FixturePtr> placed;
         if (start.has_value())
@@ -71,7 +71,7 @@ namespace Core::Engine::Components
         return fids;
     }
 
-    Core::DMX::Universe* Patch::getUniverse(uint16_t universe)
+    LightEngine::DMX::Universe* Patch::getUniverse(uint16_t universe)
     {
         const auto it = m_universes.find(universe);
         return it != m_universes.end() ? &it->second : nullptr;

@@ -1,11 +1,11 @@
-#include "Show/Sequence.h"
+#include "LightEngine/Show/Sequence.h"
 
 #include <algorithm>
 
-#include "Effects/EffectFactory.h"
-#include "Fixture/Fixture.h"
+#include "LightEngine/Effects/EffectFactory.h"
+#include "LightEngine/Fixture/Fixture.h"
 
-namespace Core::Show
+namespace LightEngine::Show
 {
     Cue& Sequence::store(const Cue& cue)
     {
@@ -22,7 +22,7 @@ namespace Core::Show
         return *m_cues.insert(pos, cue);
     }
 
-    void Sequence::instantiate(Core::Engine::Components::Patch& patch)
+    void Sequence::instantiate(LightEngine::Engine::Components::Patch& patch)
     {
         m_playback.clear();
         if (m_current < 0) return;
@@ -37,21 +37,21 @@ namespace Core::Show
         }
     }
 
-    void Sequence::go(Core::Engine::Components::Patch& patch)
+    void Sequence::go(LightEngine::Engine::Components::Patch& patch)
     {
         if (m_cues.empty()) return;
         m_current = (m_current + 1) % static_cast<int>(m_cues.size());
         instantiate(patch);
     }
 
-    void Sequence::goTo(std::size_t index, Core::Engine::Components::Patch& patch)
+    void Sequence::goTo(std::size_t index, LightEngine::Engine::Components::Patch& patch)
     {
         if (index >= m_cues.size()) return;
         m_current = static_cast<int>(index);
         instantiate(patch);
     }
 
-    void Sequence::apply(const Effects::TimeContext& t, Core::Engine::Components::Patch& patch)
+    void Sequence::apply(const Effects::TimeContext& t, LightEngine::Engine::Components::Patch& patch)
     {
         if (m_current < 0) return;
         const Cue& cue = m_cues[m_current];

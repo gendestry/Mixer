@@ -1,6 +1,6 @@
-#include "Fixture/Parameters/Presets.h"
+#include "LightEngine/Fixture/Parameters/Presets.h"
 
-namespace Core::Parameters::Presets
+namespace LightEngine::Parameters::Presets
 {
     const Descriptor* ColorRGB()
     {

@@ -1,59 +1,34 @@
-# cmake_minimum_required(VERSION 3.10)
-
-# # Project setup
-# project(mixer VERSION 1.0 LANGUAGES CXX)
-# include(FetchContent)
-
-# set(CMAKE_CXX_STANDARD 23)
-# set(CMAKE_CXX_STANDARD_REQUIRED True)
-
-# find_package(fmt CONFIG REQUIRED)
-# find_package(asio CONFIG REQUIRED)
-# find_package(magic_enum CONFIG REQUIRED)
-# # --------------------------------------------------
-# # Your target
-# # --------------------------------------------------
-
-# # Collect source files
-# file(GLOB_RECURSE SOURCES src/*.cpp)
-
-# # Define the executable
-# add_executable(${PROJECT_NAME} ${SOURCES}
-#         include/Scene/fixture.h)
-
-# target_link_libraries(${PROJECT_NAME}
-#         PRIVATE fmt::fmt asio::asio magic_enum::magic_enum
-# )
-
-# # Attach include directories to the target (after it's created)
-# target_include_directories(${PROJECT_NAME}
-#         PUBLIC
-#         include
-#         PRIVATE
-#         ${PROJECT_SOURCE_DIR}/src
-# )
-
-
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 
 # Project setup
-project(mixer VERSION 1.0 LANGUAGES CXX)
+project(LightEngine VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# add_subdirectory(lib/json)
 add_subdirectory(lib/Utils)
-# add_subdirectory(lib/FTXUI)
 
-file(GLOB_RECURSE SOURCES src/*.cpp)
+# --------------------------------------------------
+# LightEngine library
+# --------------------------------------------------
+file(GLOB_RECURSE LIGHTENGINE_SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_library(LightEngine ${LIGHTENGINE_SOURCES})
+add_library(LightEngine::LightEngine ALIAS LightEngine)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE utils)
-target_include_directories(${PROJECT_NAME}
+target_compile_features(LightEngine PUBLIC cxx_std_23)
+# Utils types appear in public headers (IP, RGB, FragmentedStorage) -> PUBLIC.
+target_link_libraries(LightEngine PUBLIC utils)
+target_include_directories(LightEngine
         PUBLIC
-        include
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
         PRIVATE
-        ${PROJECT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
+# --------------------------------------------------
+# Example / demo app (was the old executable)
+# --------------------------------------------------
+add_executable(LightEngine_demo examples/demo/main.cpp)
+target_link_libraries(LightEngine_demo PRIVATE LightEngine::LightEngine)

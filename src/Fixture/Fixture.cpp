@@ -1,8 +1,8 @@
-#include "Fixture/Fixture.h"
+#include "LightEngine/Fixture/Fixture.h"
 
 #include <utility>
 
-namespace Core
+namespace LightEngine
 {
     using Parameters::Type;
     using Parameters::Parameter;

@@ -1,6 +1,6 @@
-#include "Engine/Components/DMXOutput.h"
+#include "LightEngine/Engine/Components/DMXOutput.h"
 
-namespace Core::Engine::Components
+namespace LightEngine::Engine::Components
 {
     DMXOutput::DMXOutput(const std::string& ip)
     {
@@ -40,7 +40,7 @@ namespace Core::Engine::Components
             sender.setSourceName(name);
     }
 
-    void DMXOutput::send(const Core::DMX::Universe& universe)
+    void DMXOutput::send(const LightEngine::DMX::Universe& universe)
     {
         ensureSender(universe.id()).send(universe.buffer());
     }
@@ -48,7 +48,7 @@ namespace Core::Engine::Components
     void DMXOutput::update(const std::set<uint16_t>& dirty, Patch& patch)
     {
         for (uint16_t universe : dirty)
-            if (const Core::DMX::Universe* uni = patch.getUniverse(universe))
+            if (const LightEngine::DMX::Universe* uni = patch.getUniverse(universe))
                 send(*uni);
     }
 

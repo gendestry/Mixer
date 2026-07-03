@@ -1,13 +1,13 @@
-#include "Engine/Engine.h"
+#include "LightEngine/Engine/Engine.h"
 
-namespace Core::Engine
+namespace LightEngine::Engine
 {
     void Engine::setIP(const std::string& ip)              { m_output.setIP(ip); }
     void Engine::setIP(const Utils::Network::IP& ip)       { m_output.setIP(ip); }
     void Engine::setSourceName(const std::string& name)    { m_output.setSourceName(name); }
 
     Components::FixtureLibrary& Engine::library()          { return m_patch.library(); }
-    Core::Fixture& Engine::define(const std::string& name) { return m_patch.library().define(name); }
+    LightEngine::Fixture& Engine::define(const std::string& name) { return m_patch.library().define(name); }
 
     std::vector<uint16_t> Engine::patch(const std::string& fixtureName, uint16_t universe, uint16_t amount,
                                         std::optional<uint32_t> start, std::optional<uint16_t> startFID)
@@ -34,7 +34,7 @@ namespace Core::Engine
         return it != m_groups.end() ? &it->second : nullptr;
     }
 
-    std::shared_ptr<Core::Fixture> Engine::getFixture(uint16_t fid)
+    std::shared_ptr<LightEngine::Fixture> Engine::getFixture(uint16_t fid)
     {
         return m_patch.getFixture(fid);
     }

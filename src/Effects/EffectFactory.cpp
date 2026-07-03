@@ -1,10 +1,10 @@
-#include "Effects/EffectFactory.h"
+#include "LightEngine/Effects/EffectFactory.h"
 
 #include <utility>
 
-#include "Effects/Effects.h"
+#include "LightEngine/Effects/Effects.h"
 
-namespace Core::Effects::EffectFactory
+namespace LightEngine::Effects::EffectFactory
 {
     std::unique_ptr<Effect> build(const Spec& spec, DMX::FixtureGroup group)
     {

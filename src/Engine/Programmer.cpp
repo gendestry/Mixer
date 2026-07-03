@@ -1,12 +1,12 @@
-#include "Engine/Programmer.h"
+#include "LightEngine/Engine/Programmer.h"
 
 #include <algorithm>
 #include <utility>
 
-#include "Effects/EffectFactory.h"
-#include "Fixture/Fixture.h"
+#include "LightEngine/Effects/EffectFactory.h"
+#include "LightEngine/Fixture/Fixture.h"
 
-namespace Core::Engine
+namespace LightEngine::Engine
 {
     void Programmer::select(DMX::FixtureGroup& group)
     {

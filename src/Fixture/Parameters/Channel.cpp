@@ -1,6 +1,6 @@
-#include "Fixture/Parameters/Channel.h"
+#include "LightEngine/Fixture/Parameters/Channel.h"
 
-namespace Core::Parameters
+namespace LightEngine::Parameters
 {
     std::string_view typeName(Type t)
     {

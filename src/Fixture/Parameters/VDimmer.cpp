@@ -1,8 +1,8 @@
-#include "Fixture/Parameters/VDimmer.h"
+#include "LightEngine/Fixture/Parameters/VDimmer.h"
 
 #include "Utils/Colors/Colors.h"   // rgbToHsv / hsvToRgb
 
-namespace Core::Parameters
+namespace LightEngine::Parameters
 {
     std::shared_ptr<Parameter> VDimmerParameter::clone() const
     {

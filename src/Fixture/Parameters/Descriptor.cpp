@@ -1,9 +1,9 @@
-#include "Fixture/Parameters/Descriptor.h"
+#include "LightEngine/Fixture/Parameters/Descriptor.h"
 
 #include <algorithm>
 #include <utility>
 
-namespace Core::Parameters
+namespace LightEngine::Parameters
 {
     Descriptor::Descriptor(Type t, uint16_t sz, std::vector<Channel> chans)
         : type(t), size(sz), channels(std::move(chans)) {}

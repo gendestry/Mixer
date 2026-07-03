@@ -1,17 +1,17 @@
-#include "DMX/Universe.h"
+#include "LightEngine/DMX/Universe.h"
 #include <iterator>
 #include <set>
 
-namespace Core::DMX
+namespace LightEngine::DMX
 {
     // Helpers to identify the fixtures inserted by a base add(): snapshot the
     // current fragments, run the add, then return the ones that are new. The
     // base storage inserts in sorted order and gives us no handle otherwise.
     namespace
     {
-        std::set<const Core::Fixture*> snapshot(const std::list<std::shared_ptr<Core::Fixture>>& frags)
+        std::set<const LightEngine::Fixture*> snapshot(const std::list<std::shared_ptr<LightEngine::Fixture>>& frags)
         {
-            std::set<const Core::Fixture*> s;
+            std::set<const LightEngine::Fixture*> s;
             for (const auto& f : frags) s.insert(f.get());
             return s;
         }
@@ -36,7 +36,7 @@ namespace Core::DMX
             m_byName[f->name()].push_back(f);
     }
 
-    Universe::FixturePtr Universe::addFixture(const Core::Fixture& fixture)
+    Universe::FixturePtr Universe::addFixture(const LightEngine::Fixture& fixture)
     {
         const auto before = snapshot(m_fragments);
         add(fixture);
@@ -47,7 +47,7 @@ namespace Core::DMX
         return nullptr;
     }
 
-    Universe::FixturePtr Universe::addFixture(const Core::Fixture& fixture, uint32_t start)
+    Universe::FixturePtr Universe::addFixture(const LightEngine::Fixture& fixture, uint32_t start)
     {
         const auto before = snapshot(m_fragments);
         add(fixture, start);
@@ -58,7 +58,7 @@ namespace Core::DMX
         return nullptr;
     }
 
-    std::vector<Universe::FixturePtr> Universe::addFixtures(const Core::Fixture& fixture, int count, uint32_t start)
+    std::vector<Universe::FixturePtr> Universe::addFixtures(const LightEngine::Fixture& fixture, int count, uint32_t start)
     {
         const auto before = snapshot(m_fragments);
         addMultiple(fixture, count, start);

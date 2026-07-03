@@ -1,11 +1,11 @@
-#include "Effects/Effects.h"
+#include "LightEngine/Effects/Effects.h"
 
 #include <cmath>
 #include <cstddef>
 
-#include "Fixture/Fixture.h"
+#include "LightEngine/Fixture/Fixture.h"
 
-namespace Core::Effects
+namespace LightEngine::Effects
 {
     namespace
     {
