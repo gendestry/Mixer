@@ -1,0 +1,180 @@
+@startuml MixerCommandSystem
+title Mixer — Command System Architecture
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+' ─────────────────────────── COMMAND CORE ───────────────────────────
+package "core::commands" {
+
+  interface Command {
+    + execute(ctx : CommandContext&) : void
+    + undo(ctx : CommandContext&) : void
+    + describe() : string
+    + ~Command()
+  }
+  note right of Command
+    Pure interface. No data members.
+    Undo-state lives in each concrete command.
+  end note
+
+  abstract class QueryCommand {
+    + undo(ctx) : void  <<no-op>>
+  }
+  note right of QueryCommand
+    Thin base ONLY for read-only
+    commands (list/help/describe):
+    supplies a default no-op undo.
+  end note
+
+  ' selection commands (mutate ctx.selection)
+  class SelectFids {
+    - fids : vector<uint16_t>
+    - prev : vector<uint16_t>
+  }
+  class SelectGroup {
+    - name : string
+    - prev : vector<uint16_t>
+  }
+
+  ' action commands (operate on ctx.selection or an explicit object)
+  class At {
+    - level : float
+    - prev : map<uint16_t,float>
+  }
+  class SetColor {
+    - rgb : RGB
+    - prev : map<uint16_t,Values>
+  }
+  class StoreGroup {
+    - name : string
+  }
+  class StoreCue {
+    - seq : string
+    - number : float
+  }
+  class Clear
+  class Label {
+    - target : ObjectRef
+    - text : string
+  }
+  class Define {
+    - name : string
+  }
+  class Patch {
+    - def : string
+    - amount : uint16_t
+    - universe : uint16_t
+    - address : optional<uint32_t>
+  }
+  class ListCmd
+}
+
+' ─────────────────────────── EXECUTION ──────────────────────────────
+package "core::exec" {
+
+  class CommandContext {
+    + engine : Engine&
+    + selection : vector<uint16_t>
+    + editDefinition : string
+    .. later ..
+    + currentCue : optional<float>
+  }
+  note bottom of CommandContext
+    The stateful command line.
+    Commands are stateless operators over this.
+  end note
+
+  class Executor {
+    - ctx : CommandContext
+    - undoStack : vector<unique_ptr<Command>>
+    - history : vector<string>
+    + submit(cmd : unique_ptr<Command>) : void
+    + oops() : void
+    + history() : const vector<string>&
+  }
+  note right of Executor
+    THE single choke point.
+    submit(): execute -> record -> push undo.
+    Nothing else mutates the Engine.
+  end note
+
+  class Parser {
+    + parse(line : string, ctx) : unique_ptr<Command>
+  }
+  note bottom of Parser
+    One front-end. GUI/keys/macros
+    produce the SAME Command objects.
+  end note
+
+  class "SafeQueue<unique_ptr<Command>>" as Queue {
+    + push(cmd) : void
+    + tryPop() : optional<unique_ptr<Command>>
+  }
+}
+
+' ─────────────────────────── FRONT-ENDS ─────────────────────────────
+package "front-ends" {
+  class ReplThread {
+    + run() : void
+  }
+  class GuiButton
+  class MacroReplay
+}
+
+' ─────────────────────────── ENGINE (existing) ──────────────────────
+package "Core::Engine (existing)" {
+  class Engine {
+    + define(name) : Fixture&
+    + patch(name, uni, amt, start?) : vector<uint16_t>
+    + group(name) : FixtureGroup&
+    + addToGroup(name, fids) : FixtureGroup&
+    + programmer() : Programmer&
+    + storeCue(seq, number) : void
+    + go(seq) : void
+    + update() : void
+  }
+  class Programmer {
+    + select(group) : void
+    + setColor(rgb) : void
+    + setIntensity(level) : void
+    + clear() : void
+  }
+  class Patch_c as "Patch"
+  class FixtureGroup
+  class Sequence
+
+  Engine *-- Programmer
+  Engine *-- Patch_c
+  Engine *-- "*" FixtureGroup
+  Engine *-- "*" Sequence
+}
+
+' ─────────────────────────── RELATIONSHIPS ──────────────────────────
+QueryCommand ..|> Command
+SelectFids  ..|> Command
+SelectGroup ..|> Command
+At          ..|> Command
+SetColor    ..|> Command
+StoreGroup  ..|> Command
+StoreCue    ..|> Command
+Clear       ..|> Command
+Label       ..|> Command
+Define      ..|> Command
+Patch       ..|> Command
+ListCmd     --|> QueryCommand
+
+Executor *-- CommandContext
+Executor o-- "*" Command : undoStack
+Parser ..> Command : creates
+CommandContext --> Engine : references
+
+' front-ends all funnel through the queue -> executor
+ReplThread ..> Parser : parse(line)
+ReplThread ..> Queue : push
+GuiButton ..> Queue : push (builds Command directly)
+MacroReplay ..> Queue : push (replays history)
+Queue ..> Executor : drained on render thread\n(submit per frame)
+Executor ..> Engine : commands call engine API
+
+@enduml

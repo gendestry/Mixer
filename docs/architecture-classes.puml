@@ -1,0 +1,256 @@
+@startuml architecture-classes
+title Mixer — class architecture
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+' ─────────────────────────────────────────────
+' Top-level orchestrator
+' ─────────────────────────────────────────────
+package "Core::Engine" {
+    class Engine {
+        - Patch m_patch
+        - DMXOutput m_output
+        - map<string, FixtureGroup> m_groups
+        - map<string, Sequence> m_sequences
+        - Programmer m_programmer
+        - Timer m_clock
+        + define(name) : Fixture&
+        + patch(name, uni, amount, ...) : vector<uint16_t>
+        + group(name) : FixtureGroup&
+        + programmer() : Programmer&
+        + sequence(name) : Sequence&
+        + storeCue(seq, number)   ' programmer -> cue
+        + go(seq)
+        + update()                ' render frame -> sACN
+    }
+
+    class Programmer {
+        - vector<FixturePtr> m_selection
+        - bool m_latched
+        - map<FixturePtr, Values> m_values
+        - set<FixturePtr> m_driven
+        - EffectEngine m_effects
+        + select(FixtureGroup&) / addToSelection
+        + clearSelection()
+        + setColor(RGB) / setIntensity(float)
+        + addEffect(Spec) : Effect*
+        + addDimmerChase(bpm, type) : DimmerChase*
+        + makeCue(number) : Cue
+        + apply(TimeContext&)     ' render, precedence over playback
+        + clear()
+    }
+}
+
+package "Core::Engine::Components" {
+    class Patch {
+        - FixtureLibrary m_library
+        - map<uint16_t, Universe> m_universes
+        - map<uint16_t, FixturePtr> m_fixtures  ' by FID
+        - set<uint16_t> m_dirty
+        + patch(...) : vector<uint16_t>
+        + getFixture(fid) : FixturePtr
+        + getUniverse(uni) : Universe*
+        + dirtyUniverses() : set&
+        + blackout()
+    }
+    class DMXOutput {
+        - map<uint16_t, SacnSender> m_senders
+        + send(Universe&)
+        + update(dirty, Patch&)   ' send only dirty universes
+        + sendAll(Patch&)
+    }
+    class FixtureLibrary {
+        - map<string, Fixture> m_fixtures   ' name -> definition
+        - DescriptorStore m_descriptors
+        + define(name) : Fixture&
+        + get(name) : Fixture*
+    }
+}
+
+' ─────────────────────────────────────────────
+' Show / playback
+' ─────────────────────────────────────────────
+package "Core::Show" {
+    class Sequence {
+        - string m_name
+        - vector<Cue> m_cues
+        - int m_current
+        - EffectEngine m_playback   ' live effects for active cue
+        + store(Cue&) : Cue&
+        + go(Patch&) / goTo(i, Patch&)
+        + apply(TimeContext&, Patch&)
+    }
+    struct Cue <<value / serializable>> {
+        + float number, fadeIn, fadeOut, delay
+        + string name
+        + map<uint16_t, Values> values   ' FID -> attrs
+        + vector<Spec> effects           ' recipes, not live objects
+    }
+}
+
+struct Values <<value>> {
+    + optional<RGB> color
+    + optional<float> intensity
+}
+
+' ─────────────────────────────────────────────
+' DMX layer
+' ─────────────────────────────────────────────
+package "Core::DMX" {
+    class Universe {
+        - uint16_t m_id
+        - array<uint8_t,512> m_buffer
+        + addFixture(Fixture&) : FixturePtr   ' place + wire buffer
+        + buffer() : array&
+        + blackout()
+    }
+    class FixtureGroup {
+        - string m_name
+        - vector<FixturePtr> m_fixtures   ' shared refs, does NOT own
+        - set<uint16_t> m_usedUniverses
+        - map<Type, vector<ParamPtr>> m_parameters  ' cached by type
+        + add(FixturePtr) / add(FixtureGroup&)
+        + parameters(Type) : vector&
+        + setColor(RGB) / setIntensity(float)
+    }
+    note bottom of Universe
+        IS-A Utils::FragmentedStorage<Fixture,512>
+        owns the 512-byte DMX buffer
+    end note
+}
+
+' ─────────────────────────────────────────────
+' Fixture + parameter (flyweight) system
+' ─────────────────────────────────────────────
+package "Core (Fixture)" {
+    class Fixture {
+        - string m_name
+        - uint16_t m_fid, m_universe
+        - vector<ParamPtr> m_parameters
+        - map<Type, vector<ParamPtr>> m_byType
+        + add(Descriptor*) : ParamPtr
+        + addVirtualDimmer() : VDimmerParameter
+        + setColor(RGB) / setIntensity(float)
+        + footprint() : uint32_t
+    }
+    note right of Fixture : IS-A Utils::Fragment\n(placed inside a Universe)
+}
+
+package "Core::Parameters" {
+    class Parameter {
+        # Descriptor* m_desc      ' shared flyweight
+        # uint8_t* m_bytes        ' -> universe buffer (non-owning)
+        # uint32_t m_baseOffset
+        + clone() : shared_ptr<Parameter>
+        + setColor(RGB) / getColor()
+        + setLevel / setPanTilt ...
+    }
+    class VDimmerParameter {
+        - Parameter* m_color
+        - float m_level
+        + bind(Parameter*)
+        + apply()   ' scales bound color; run AFTER color write
+    }
+    struct Descriptor <<flyweight>> {
+        + Type type
+        + uint16_t size
+        + vector<Channel> channels
+    }
+    class DescriptorStore {
+        - deque<Descriptor> m_descriptors
+        + intern(Descriptor&) : Descriptor*
+    }
+    Parameter <|-- VDimmerParameter
+    Parameter ..> Descriptor : views (shared)
+    DescriptorStore o-- "*" Descriptor
+}
+
+' ─────────────────────────────────────────────
+' Effects (Spec = recipe, Effect = live)
+' ─────────────────────────────────────────────
+package "Core::Effects" {
+    abstract class Effect {
+        # FixtureGroup m_group   ' owns its target (by value)
+        # bool m_enabled
+        + {abstract} apply(TimeContext&)
+        + {abstract} spec() : Spec
+    }
+    class ColorEffect
+    class DimmerEffect
+    class ColorFade
+    class DimmerChase {
+        - Curve m_curve
+        - float m_bpm, m_spread
+    }
+    class EffectEngine {
+        - vector<unique_ptr<Effect>> m_effects
+        + add / emplace / remove / clear
+        + update(TimeContext&)   ' run enabled effects in order
+    }
+    struct Spec <<serializable recipe>> {
+        + Kind kind
+        + vector<uint16_t> fids
+        + Type curve
+        + float bpm, spread, level
+        + RGB colorA, colorB
+    }
+    class EffectFactory <<namespace>> {
+        + build(Spec&, FixtureGroup) : unique_ptr<Effect>
+    }
+    struct TimeContext {
+        + double elapsed, dt
+        + uint32_t tick
+        + phase(hz) : float
+    }
+
+    Effect <|-- ColorEffect
+    Effect <|-- DimmerEffect
+    Effect <|-- ColorFade
+    Effect <|-- DimmerChase
+    EffectEngine o-- "*" Effect
+    EffectFactory ..> Spec : reads
+    EffectFactory ..> Effect : builds
+    Effect ..> Spec : spec()
+    Effect ..> TimeContext : apply()
+}
+
+' ─────────────────────────────────────────────
+' Relationships across packages
+' ─────────────────────────────────────────────
+Engine *-- Patch
+Engine *-- DMXOutput
+Engine *-- Programmer
+Engine *-- "*" FixtureGroup
+Engine *-- "*" Sequence
+
+Patch *-- FixtureLibrary
+Patch *-- "*" Universe
+Patch o-- "*" Fixture : by FID
+FixtureLibrary o-- "*" Fixture : definitions
+FixtureLibrary *-- DescriptorStore
+
+DMXOutput ..> Patch : reads dirty
+DMXOutput ..> Universe : sends buffer
+
+Universe o-- "*" Fixture : places + wires
+Fixture *-- "*" Parameter
+Fixture ..> Descriptor : add()
+
+FixtureGroup o-- "*" Fixture : shared refs
+FixtureGroup ..> Parameter : cached by type
+
+Programmer o-- "*" Fixture : selection
+Programmer *-- EffectEngine
+Programmer ..> Values : accumulates
+Programmer ..> Cue : makeCue()
+
+Sequence *-- "*" Cue
+Sequence *-- EffectEngine : playback
+Sequence ..> EffectFactory : instantiate on go()
+Cue o-- "*" Values
+Cue o-- "*" Spec
+Effect *-- FixtureGroup
+
+@enduml

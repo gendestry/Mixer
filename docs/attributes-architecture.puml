@@ -1,0 +1,145 @@
+@startuml attributes-architecture
+title Mixer — proposed Attributes architecture
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+' ─────────────────────────────────────────────
+' Core::Attributes — the new home for FixtureGroup,
+' per-capability attributes, and the group pool.
+' ─────────────────────────────────────────────
+package "Core::Attributes" {
+
+    ' ---- abstract pool (holds named objects, type-erased) ----
+    abstract class Pool {
+        + {abstract} kind() : string        ' "Group", "Preset", ...
+        + {abstract} size() : size_t
+        + {abstract} remove(name) : bool
+        + {abstract} contains(name) : bool
+        + {abstract} describe() : string
+    }
+    class "AttributePool<T>" as AttributePool {
+        - string m_kind
+        - map<string, T> m_items
+        - int m_nextId
+        + getOrCreate(name) : T&
+        + find(name) : T*
+        + begin() / end()          ' range-for
+    }
+    note right of AttributePool
+        using GroupPool = AttributePool<FixtureGroup>
+        static_assert(T : Attribute-holder)
+    end note
+    Pool <|-- AttributePool
+
+    ' ---- FixtureGroup: same behaviour as today, now here ----
+    class FixtureGroup {
+        - string m_name
+        - int m_id
+        - vector<FixturePtr> m_fixtures      ' shared refs, does NOT own
+        - set<uint16_t> m_usedUniverses
+        - map<Type, unique_ptr<Attribute>> m_attributes  ' was map<Type, vector<ParamPtr>>
+        + add(FixturePtr) / add(FixtureGroup&) / clear()
+        + fixtures() : vector& / size() / contains()
+        + parameters(Type) : vector&        ' forwards to attribute
+        + has(Type) : bool
+        --  same convenience API as before  --
+        + setColor(RGB) / setIntensity(float) / applyVirtualDimmers()
+        --  new: attributes as first-class objects  --
+        + color() : ColorAttribute&
+        + dimmer() : DimmerAttribute&
+        + position() : PositionAttribute&
+        + attribute(Type) : Attribute*
+        + describe() : string
+    }
+    note left of FixtureGroup
+        indexParameters(fixture):
+        route each of the fixture's params into
+        the matching Attribute (create on first sight).
+        => attributes are bound to exactly the group's
+           fixtures that contain that capability.
+    end note
+
+    ' ---- per-capability attribute hierarchy ----
+    abstract class Attribute {
+        # vector<ParamPtr> m_params    ' non-owning, like the group's fixtures
+        + {abstract} type() : Type
+        + add(ParamPtr) / clear()
+        + parameters() : vector& / size() / empty()
+        + describe() : string
+    }
+    class ColorAttribute {
+        + type() = COLOR
+        + setColor(RGB)               ' writes every bound color param
+        + getColor() : RGB
+    }
+    class DimmerAttribute {
+        + type() = DIMMER
+        + setLevel(float)
+    }
+    class PositionAttribute {
+        + type() = POSITION
+        + setPan(float) / setTilt(float) / setPanTilt(float,float)
+    }
+
+    Attribute <|-- ColorAttribute
+    Attribute <|-- DimmerAttribute
+    Attribute <|-- PositionAttribute
+
+    FixtureGroup *-- "0..3" Attribute : one per present Type\n(unique_ptr, owned)
+}
+
+' ─────────────────────────────────────────────
+' Existing pieces it binds to (unchanged)
+' ─────────────────────────────────────────────
+package "Core (Fixture)" {
+    class Fixture {
+        - vector<ParamPtr> m_parameters
+        - map<Type, vector<ParamPtr>> m_byType
+        + parameters(Type) : vector&
+        + has(Type) : bool
+    }
+}
+
+package "Core::Parameters" {
+    class Parameter {
+        + setColor(RGB) / getColor()
+        + setLevel / setPanTilt ...
+    }
+    enum Type {
+        DIMMER
+        COLOR
+        POSITION
+        VDIMMER
+    }
+}
+
+package "Core::Engine" {
+    class Engine {
+        - Patch m_patch
+        - DMXOutput m_output
+        - GroupPool m_groups          ' was map<string, FixtureGroup>
+        - map<string, Sequence> m_sequences
+        - Programmer m_programmer
+        + group(name) : FixtureGroup&     ' -> m_groups.getOrCreate
+        + getGroup(name) : FixtureGroup*  ' -> m_groups.find
+        + addToGroup(name, fids) : FixtureGroup&
+    }
+}
+
+' ─────────────────────────────────────────────
+' Relationships
+' ─────────────────────────────────────────────
+Engine *-- "1" AttributePool : GroupPool m_groups
+AttributePool o-- "*" FixtureGroup : by name
+
+FixtureGroup o-- "*" Fixture : shared refs (the selection)
+Attribute o-- "*" Parameter : bound refs\n(only fixtures with this capability)
+Attribute ..> Type : type()
+
+ColorAttribute ..> Parameter : setColor -> RGB fields
+PositionAttribute ..> Parameter : setPan/Tilt -> PAN/TILT
+DimmerAttribute ..> Parameter : setLevel -> DIMMER
+
+@enduml
