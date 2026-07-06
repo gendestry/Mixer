@@ -1,0 +1,30 @@
+# Mixer command language (MA-flavoured).
+#   UPPERCASE -> token name (from commands.tokens)
+#   lowercase -> rule reference
+#   verbs/objects are keywords; + - @ are symbols.
+#
+# Start rule is `command` (first declared). One line = one command:
+#   Store Group 1
+#   Delete Cue 3
+#   Group 1 + Fixture 3 Thru 6 - 4 @ 50
+#   Fixture 1 Thru 10 @ Full
+
+command    : store_cmd | delete_cmd | select_cmd ;
+
+store_cmd  : STORE target ;
+delete_cmd : DELETE target ;
+
+# a bare selection, optionally followed by a level (@ 50 / @ Full)
+select_cmd : selection level? ;
+
+# where a Store/Delete lands: a pool object + id
+target     : objtype NUM ;
+
+# selection algebra: term (+|- term)*
+selection  : term (op term)* ;
+term       : object (THRU object)? ;
+object     : objtype NUM | NUM ;
+
+objtype    : FIXTURE | GROUP | COLOR | CUE | PRESET ;
+op         : PLUS | MINUS ;
+level      : AT (FULL | NUM) ;

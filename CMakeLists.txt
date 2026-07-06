@@ -9,6 +9,24 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_subdirectory(lib/Utils)
 
 # --------------------------------------------------
+# NewSyntaxParser - parser engine as a static library (Syntax/ + Tokenizer/
+# only; skip its main.cpp and tests, and avoid re-adding Utils).
+# --------------------------------------------------
+file(GLOB SYNPARSER_SOURCES CONFIGURE_DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/NewSyntaxParser/src/Syntax/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/NewSyntaxParser/src/Tokenizer/*.cpp)
+
+# Node.cpp is only a debug tree-printer and uses Utils::Font::reset, which this
+# repo's (older) Utils submodule lacks. The Engine/GrammarParser don't need it.
+list(REMOVE_ITEM SYNPARSER_SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/NewSyntaxParser/src/Syntax/Node.cpp)
+
+add_library(synparser STATIC ${SYNPARSER_SOURCES})
+target_compile_features(synparser PUBLIC cxx_std_23)
+target_include_directories(synparser PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/NewSyntaxParser/src)
+target_link_libraries(synparser PUBLIC utils)
+
+# --------------------------------------------------
 # LightEngine library
 # --------------------------------------------------
 file(GLOB_RECURSE LIGHTENGINE_SOURCES CONFIGURE_DEPENDS src/*.cpp)
@@ -18,7 +36,8 @@ add_library(LightEngine::LightEngine ALIAS LightEngine)
 
 target_compile_features(LightEngine PUBLIC cxx_std_23)
 # Utils types appear in public headers (IP, RGB, FragmentedStorage) -> PUBLIC.
-target_link_libraries(LightEngine PUBLIC utils)
+# synparser::Node appears in the Console command headers -> PUBLIC.
+target_link_libraries(LightEngine PUBLIC utils synparser)
 target_include_directories(LightEngine
         PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -32,3 +51,11 @@ target_include_directories(LightEngine
 # --------------------------------------------------
 add_executable(LightEngine_demo examples/demo/main.cpp)
 target_link_libraries(LightEngine_demo PRIVATE LightEngine::LightEngine)
+
+# --------------------------------------------------
+# CLI demo: parse a command line into the typed Command AST and print it.
+# --------------------------------------------------
+add_executable(mixer_cli examples/cli/main.cpp)
+target_link_libraries(mixer_cli PRIVATE LightEngine::LightEngine)
+target_compile_definitions(mixer_cli PRIVATE
+        MIXER_GRAMMAR_DIR="${CMAKE_CURRENT_SOURCE_DIR}/grammar")
