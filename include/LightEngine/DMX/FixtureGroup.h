@@ -30,9 +30,10 @@ namespace LightEngine::DMX
         std::string                                 m_name;
         std::vector<FixturePtr>                     m_fixtures;
         std::set<uint16_t>                          m_usedUniverses;
-        std::map<Parameters::Type, std::vector<ParamPtr>> m_parameters;  // cached, by type
+        mutable std::map<Parameters::Type, std::vector<ParamPtr>> m_parameters;  // cached, by type (lazy)
+        mutable bool                                m_cacheDirty = true;
 
-        void indexParameters(const FixturePtr& fixture);
+        void rebuildCache() const;   // (re)build m_parameters from m_fixtures
 
     public:
         FixtureGroup() = default;

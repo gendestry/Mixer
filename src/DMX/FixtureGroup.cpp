@@ -7,10 +7,13 @@ namespace LightEngine::DMX
 {
     FixtureGroup::FixtureGroup(std::string name) : m_name(std::move(name)) {}
 
-    void FixtureGroup::indexParameters(const FixturePtr& fixture)
+    void FixtureGroup::rebuildCache() const
     {
-        for (const auto& p : fixture->parameters())
-            m_parameters[p->getType()].push_back(p);
+        m_parameters.clear();
+        for (const auto& f : m_fixtures)
+            for (const auto& p : f->parameters())
+                m_parameters[p->getType()].push_back(p);
+        m_cacheDirty = false;
     }
 
     bool FixtureGroup::contains(const FixturePtr& fixture) const
@@ -23,7 +26,7 @@ namespace LightEngine::DMX
         if (fixture == nullptr || contains(fixture)) return;
         m_fixtures.push_back(fixture);
         m_usedUniverses.insert(fixture->universe());
-        indexParameters(fixture);
+        m_cacheDirty = true;
     }
 
     void FixtureGroup::add(const std::vector<FixturePtr>& fixtures)
@@ -41,17 +44,20 @@ namespace LightEngine::DMX
         m_fixtures.clear();
         m_usedUniverses.clear();
         m_parameters.clear();
+        m_cacheDirty = true;
     }
 
     const std::vector<FixtureGroup::ParamPtr>& FixtureGroup::parameters(Parameters::Type t) const
     {
         static const std::vector<ParamPtr> empty;
+        if (m_cacheDirty) rebuildCache();
         const auto it = m_parameters.find(t);
         return it != m_parameters.end() ? it->second : empty;
     }
 
     bool FixtureGroup::has(Parameters::Type t) const
     {
+        if (m_cacheDirty) rebuildCache();
         return m_parameters.contains(t);
     }
 

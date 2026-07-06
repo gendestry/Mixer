@@ -34,6 +34,58 @@ namespace LightEngine::Engine
         return it != m_groups.end() ? &it->second : nullptr;
     }
 
+    // ---- pools ----------------------------------------------------------
+
+    Attributes::Pool<Attributes::Preset>& Engine::presetPool(Attributes::Feature feature)
+    {
+        switch (feature)
+        {
+            case Attributes::Feature::Color:     return m_colorPool;
+            case Attributes::Feature::Intensity: return m_intensityPool;
+            case Attributes::Feature::Position:  return m_positionPool;
+            case Attributes::Feature::Dimmer:    return m_dimmerPool;
+        }
+        return m_colorPool;   // unreachable; keeps the compiler happy
+    }
+
+    void Engine::storeGroup(int id, const std::string& name)
+    {
+        // Snapshot the anonymous selection as FIDs (independent of the programmer).
+        m_groupPool.store(id, Attributes::Group(name, m_programmer.selectionFids()));
+    }
+
+    void Engine::storePreset(Attributes::Feature feature, int id, const std::string& name)
+    {
+        Attributes::Preset preset(name, feature);
+        preset.setValues(m_programmer.snapshot(feature));   // per-FID, feature-masked
+        presetPool(feature).store(id, std::move(preset));
+    }
+
+    void Engine::storeFx(int id, const std::string& name)
+    {
+        Attributes::FxPreset fx(name);
+        fx.setSpecs(m_programmer.effectSpecs());
+        m_fxPool.store(id, std::move(fx));
+    }
+
+    void Engine::selectGroup(int id)
+    {
+        Attributes::Group* g = m_groupPool.get(id);
+        if (g == nullptr) return;
+
+        // Resolve stored FIDs into live fixtures, then feed the selection.
+        DMX::FixtureGroup group;
+        group.add(m_patch.getFixtures(g->fids()));
+        m_programmer.select(group);
+        m_programmer.addSelectedGroup(id);
+    }
+
+    void Engine::applyPreset(Attributes::Feature feature, int id)
+    {
+        if (Attributes::Preset* p = presetPool(feature).get(id))
+            m_programmer.applyPreset(*p);
+    }
+
     std::shared_ptr<LightEngine::Fixture> Engine::getFixture(uint16_t fid)
     {
         return m_patch.getFixture(fid);

@@ -10,6 +10,11 @@
 #include "Utils/Network/IP.h"
 #include "Utils/Time/Timer.h"
 
+#include "LightEngine/Attributes/Feature.h"
+#include "LightEngine/Attributes/FxPreset.h"
+#include "LightEngine/Attributes/Group.h"
+#include "LightEngine/Attributes/Pool.h"
+#include "LightEngine/Attributes/Preset.h"
 #include "LightEngine/DMX/FixtureGroup.h"
 #include "LightEngine/Engine/Components/DMXOutput.h"
 #include "LightEngine/Engine/Components/Patch.h"
@@ -35,6 +40,16 @@ namespace LightEngine::Engine
         unsigned int                             m_prevMs = 0;
         uint32_t                                 m_tick   = 0;
 
+        // ---- pools (poolable Attributes, keyed by cell id) ----
+        Attributes::Pool<Attributes::Group>    m_groupPool;
+        Attributes::Pool<Attributes::Preset>   m_colorPool;
+        Attributes::Pool<Attributes::Preset>   m_intensityPool;
+        Attributes::Pool<Attributes::Preset>   m_positionPool;
+        Attributes::Pool<Attributes::Preset>   m_dimmerPool;
+        Attributes::Pool<Attributes::FxPreset> m_fxPool;
+
+        Attributes::Pool<Attributes::Preset>& presetPool(Attributes::Feature feature);
+
     public:
         Engine() = default;
 
@@ -57,6 +72,20 @@ namespace LightEngine::Engine
 
         // ---- programmer (live editing layer) ----
         [[nodiscard]] Programmer& programmer() { return m_programmer; }
+
+        // ---- pools: store (programmer -> pool) ----
+        void storeGroup(int id, const std::string& name = "");                       // selection -> Group pool
+        void storePreset(Attributes::Feature feature, int id, const std::string& name = "");  // values -> feature pool
+        void storeFx(int id, const std::string& name = "");                          // effects -> FX pool
+
+        // ---- pools: recall (pool -> programmer) ----
+        void selectGroup(int id);                        // resolve + add group to selection
+        void applyPreset(Attributes::Feature feature, int id);   // stamp preset onto selection
+
+        // ---- pool accessors (for UI / inspection) ----
+        [[nodiscard]] Attributes::Pool<Attributes::Group>&    groupPool() { return m_groupPool; }
+        [[nodiscard]] Attributes::Pool<Attributes::Preset>&   colorPool() { return m_colorPool; }
+        [[nodiscard]] Attributes::Pool<Attributes::FxPreset>& fxPool()    { return m_fxPool; }
 
         // ---- sequences / cues ----
         Show::Sequence& sequence(const std::string& name);          // get or create

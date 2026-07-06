@@ -1,10 +1,24 @@
 #include "LightEngine/Engine/Programmer.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <utility>
 
 #include "LightEngine/Effects/EffectFactory.h"
 #include "LightEngine/Fixture/Fixture.h"
+
+namespace
+{
+    // Linear interpolation between two colours (per 8-bit channel).
+    Utils::Colors::RGB lerpRGB(const Utils::Colors::RGB& a, const Utils::Colors::RGB& b, float t)
+    {
+        const auto mix = [t](uint8_t x, uint8_t y) {
+            const float v = static_cast<float>(x) + (static_cast<float>(y) - static_cast<float>(x)) * t;
+            return static_cast<uint8_t>(v);
+        };
+        return Utils::Colors::RGB{mix(a.r, b.r), mix(a.g, b.g), mix(a.b, b.b)};
+    }
+}
 
 namespace LightEngine::Engine
 {
@@ -13,6 +27,7 @@ namespace LightEngine::Engine
         if (m_latched)       // first select after an edit -> start a fresh selection
         {
             m_selection.clear();
+            m_selectedGroups.clear();
             m_latched = false;
         }
         addToSelection(group);
@@ -28,6 +43,7 @@ namespace LightEngine::Engine
     void Programmer::clearSelection()
     {
         m_selection.clear();
+        m_selectedGroups.clear();
         m_latched = false;
     }
 
@@ -89,6 +105,72 @@ namespace LightEngine::Engine
         return static_cast<Effects::DimmerChase*>(addEffect(spec));
     }
 
+    void Programmer::applyColorGradient(const Utils::Colors::RGB& a, const Utils::Colors::RGB& b)
+    {
+        const std::size_t n = m_selection.size();
+        for (std::size_t i = 0; i < n; ++i)
+        {
+            const float t = (n <= 1) ? 0.0f : static_cast<float>(i) / static_cast<float>(n - 1);
+            const auto& f = m_selection[i];
+            m_values[f].color = lerpRGB(a, b, t);
+            m_driven.insert(f);
+        }
+        touch();
+    }
+
+    void Programmer::applyPreset(const Attributes::Preset& preset)
+    {
+        const Attributes::Feature feature = preset.feature();
+
+        if (preset.mode() == Attributes::RecallMode::Absolute)
+        {
+            // Each selected fixture gets the value stored against its own FID.
+            for (const auto& f : m_selection)
+            {
+                if (const LightEngine::Values* v = preset.valuesFor(f->fid()))
+                {
+                    Attributes::mergeFeature(m_values[f], *v, feature);
+                    m_driven.insert(f);
+                }
+            }
+        }
+        else   // ByIndex: fan the stored values across the ordered selection
+        {
+            const std::vector<LightEngine::Values> vals = preset.ordered();
+            if (!vals.empty())
+            {
+                for (std::size_t i = 0; i < m_selection.size(); ++i)
+                {
+                    const auto& f = m_selection[i];
+                    Attributes::mergeFeature(m_values[f], vals[i % vals.size()], feature);
+                    m_driven.insert(f);
+                }
+            }
+        }
+        touch();
+    }
+
+    std::map<uint16_t, LightEngine::Values> Programmer::snapshot(Attributes::Feature feature) const
+    {
+        std::map<uint16_t, LightEngine::Values> out;
+        for (const auto& [f, values] : m_values)
+        {
+            const LightEngine::Values masked = Attributes::maskFeature(values, feature);
+            if (Attributes::hasFeature(masked, feature))
+                out[f->fid()] = masked;
+        }
+        return out;
+    }
+
+    std::vector<Effects::Spec> Programmer::effectSpecs() const
+    {
+        std::vector<Effects::Spec> specs;
+        specs.reserve(m_effects.size());
+        for (const auto& fx : m_effects.effects())
+            specs.push_back(fx->spec());
+        return specs;
+    }
+
     Show::Cue Programmer::makeCue(float number) const
     {
         Show::Cue cue;
@@ -123,6 +205,7 @@ namespace LightEngine::Engine
     void Programmer::clear()
     {
         m_selection.clear();
+        m_selectedGroups.clear();
         m_values.clear();
         m_driven.clear();
         m_effects.clear();

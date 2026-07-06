@@ -14,11 +14,11 @@ int main()
     engine.define("pixel").add(Parameters::Presets::ColorRGB());
 
     // Patch + group: group1 @ uni 8, group2 @ uni 9, group3 @ uni 10.
-    engine.addToGroup("group1", engine.patch("pixel",  8,  93));
-    engine.addToGroup("group2", engine.patch("pixel",  9, 120));
-    engine.addToGroup("group3", engine.patch("pixel", 10,  60));
+    engine.addToGroup("group1", engine.patch("pixel", 8, 93));
+    engine.addToGroup("group2", engine.patch("pixel", 9, 120));
+    engine.addToGroup("group3", engine.patch("pixel", 10, 60));
 
-    auto& prog = engine.programmer();
+    auto &prog = engine.programmer();
 
     // Select group1 + group2, add a dimmer chase at 120 BPM.
     prog.select(*engine.getGroup("group1"));
@@ -54,7 +54,7 @@ int main()
     engine.setIP(Utils::Network::Interfaces::primaryIP());
     for (int frame = 0; frame < 400; ++frame)
     {
-        if(frame == 150 || frame == 300)
+        if (frame == 150 || frame == 300)
         {
             engine.go("main");
         }
