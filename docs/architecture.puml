@@ -1,0 +1,301 @@
+' =====================================================================
+'  Mixer / LightEngine - architecture overview
+'  Three diagrams:
+'    1. Class diagram      - who owns what, how types relate
+'    2. Frame sequence     - what update() does every frame
+'    3. Patch + store flow - how a fixture is patched and a cue stored
+' =====================================================================
+
+' ---------------------------------------------------------------------
+' 1. CLASS DIAGRAM
+' ---------------------------------------------------------------------
+@startuml architecture-classes
+title Mixer / LightEngine - class & ownership diagram
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+package "Definition layer (personalities)" {
+  class FixtureLibrary {
+    - m_fixtures : map<string, Fixture>   ' name -> definition template
+    - m_descriptors : DescriptorStore
+    + define(name) : Fixture&
+    + get(name) : const Fixture*
+  }
+  class DescriptorStore {
+    - m_descriptors : deque<Descriptor>   ' stable addresses
+    + intern(Descriptor) : const Descriptor*
+  }
+  class Descriptor <<flyweight>> {
+    + type : Type
+    + size : uint16
+    + channels : vector<Channel>
+  }
+  class Channel <<struct>> {
+    + field : Field
+    + offset : uint16
+    + width : uint8
+  }
+  FixtureLibrary *-- DescriptorStore
+  DescriptorStore o-- Descriptor
+  Descriptor *-- "n" Channel
+}
+
+package "Fixture / parameter layer" {
+  class Fixture {
+    - m_name : string
+    - m_fid : uint16
+    - m_universe : uint16
+    - m_parameters : vector<ParamPtr>       ' layout order
+    - m_byType : map<Type, vector<ParamPtr>>' indexed by capability
+    - buffer : uint8*                        ' -> universe buffer
+    + add(Descriptor*) : ParamPtr
+    + setColor(RGB)
+    + setIntensity(float)
+    + applyVirtualDimmers()
+    + parameters(Type) : vector<ParamPtr>&
+  }
+  class Parameter <<view over DMX bytes>> {
+    - m_desc : const Descriptor*
+    - m_bytes : uint8*     ' -> universe buffer
+    - m_baseOffset : uint32
+    + setColor(RGB)
+    + setLevel(float)
+    + setPanTilt(float,float)
+  }
+  class VDimmerParameter {
+    ' virtual dimmer: scales a color param, zero DMX footprint
+    + bind(Parameter* color)
+  }
+  Fixture *-- "n" Parameter
+  Parameter <|-- VDimmerParameter
+  Parameter ..> Descriptor : reads layout from
+}
+
+package "DMX layer (buffers + patch)" {
+  class Universe {
+    - m_id : uint16
+    - m_buffer : array<uint8,512>   ' the raw DMX frame
+    + addFixture(Fixture) : FixturePtr
+    + blackout()
+    + buffer() : array<uint8,512>&
+  }
+  class Patch {
+    - m_library : FixtureLibrary
+    - m_universes : map<uint16, Universe>
+    - m_fixtures : map<uint16, FixturePtr>   ' by FID
+    - m_dirty : set<uint16>
+    + patch(name,uni,amount,..) : vector<uint16>  ' returns FIDs
+    + getFixture(fid) : FixturePtr
+    + getFixtures(fids) : vector<FixturePtr>
+    + blackout()
+  }
+  Universe *-- "n" Fixture : owns & places
+  Patch *-- FixtureLibrary
+  Patch *-- "n" Universe
+  Patch o-- Fixture : FID -> instance
+}
+
+package "Grouping" {
+  class FixtureGroup <<shared refs, not owner>> {
+    - m_name : string
+    - m_fixtures : vector<FixturePtr>
+    - m_parameters : map<Type, vector<ParamPtr>>  ' cached buckets
+    + add(FixturePtr)
+    + parameters(Type) : vector<ParamPtr>&
+    + setColor(RGB)
+  }
+  FixtureGroup o-- Fixture : references
+}
+
+package "Programmer (live edit layer)" {
+  struct Values {
+    + color : optional<RGB>
+    + intensity : optional<float>
+  }
+  class Programmer {
+    - m_selection : vector<FixturePtr>       ' who
+    - m_latched : bool                       ' edited since last select?
+    - m_values : map<FixturePtr, Values>     ' what (accumulated)
+    - m_driven : set<FixturePtr>             ' everything touched
+    - m_effects : EffectEngine
+    + select(FixtureGroup&)
+    + setColor(RGB) / setIntensity(float)
+    + addEffect(Spec) : Effect*
+    + apply(TimeContext)                     ' render this frame
+    + makeCue(number) : Cue                  ' snapshot -> cue
+    + clear()
+  }
+  Programmer o-- Fixture : selection references
+  Programmer *-- Values
+}
+
+package "Effects" {
+  class EffectEngine {
+    - m_effects : vector<unique_ptr<Effect>>
+    + add(Effect) / update(TimeContext)
+  }
+  abstract class Effect {
+    # m_group : FixtureGroup   ' owns its target by value
+    + apply(TimeContext)
+    + spec() : Spec
+  }
+  class ColorEffect
+  class DimmerEffect
+  class ColorFade
+  class DimmerChase
+  class "EffectFactory::build()" as EffectFactory <<free fn>> {
+    + build(Spec, FixtureGroup) : unique_ptr<Effect>
+  }
+  struct Spec <<serializable recipe>> {
+    + kind : Kind
+    + fids : vector<uint16>
+    + curve/bpm/spread/level/colorA/colorB
+  }
+  struct TimeContext {
+    + elapsed / dt / tick
+    + phase(hz) : float
+  }
+  EffectEngine *-- Effect
+  Effect <|-- ColorEffect
+  Effect <|-- DimmerEffect
+  Effect <|-- ColorFade
+  Effect <|-- DimmerChase
+  Effect *-- FixtureGroup
+  EffectFactory ..> Spec : reads
+  EffectFactory ..> Effect : builds
+  Effect ..> Spec : spec()
+}
+
+package "Show (playback)" {
+  struct Cue <<serializable look>> {
+    + number : float
+    + values : map<uint16, Values>   ' by FID
+    + effects : vector<Spec>          ' recipes
+  }
+  class Sequence {
+    - m_cues : vector<Cue>
+    - m_current : int
+    - m_playback : EffectEngine
+    + store(Cue) / go(Patch) / apply(TimeContext, Patch)
+  }
+  Sequence *-- "n" Cue
+  Sequence *-- EffectEngine
+  Cue *-- Values
+  Cue *-- Spec
+}
+
+package "Output" {
+  class DMXOutput {
+    - m_senders : map<uint16, SacnSender>
+    + sendAll(Patch)   ' stream buffers over sACN
+  }
+}
+
+class Engine <<top-level orchestrator>> {
+  - m_patch : Patch
+  - m_output : DMXOutput
+  - m_groups : map<string, FixtureGroup>
+  - m_sequences : map<string, Sequence>
+  - m_programmer : Programmer
+  + define / patch / group
+  + storeCue(seq, number) / go(seq)
+  + update()   ' render + send one frame
+}
+
+Engine *-- Patch
+Engine *-- DMXOutput
+Engine *-- Programmer
+Engine *-- "n" FixtureGroup
+Engine *-- "n" Sequence
+DMXOutput ..> Patch : reads buffers
+Sequence ..> Patch : resolves FIDs, writes fixtures
+Programmer ..> Cue : makeCue()
+@enduml
+
+
+' ---------------------------------------------------------------------
+' 2. FRAME SEQUENCE - Engine::update()
+' ---------------------------------------------------------------------
+@startuml architecture-frame
+title Engine::update() - one rendered frame
+skinparam sequenceMessageAlign center
+
+participant App
+participant Engine
+participant Patch
+participant Sequence
+participant Programmer
+participant Fixture
+participant DMXOutput
+
+App -> Engine : update()
+Engine -> Patch : blackout()  (zero every universe buffer)
+note right of Patch : non-tracking:\nevery frame rebuilt from scratch
+
+group Playback layer
+  Engine -> Sequence : apply(ctx, patch)
+  Sequence -> Fixture : setColor/setIntensity (active cue values)
+  Sequence -> Sequence : m_playback.update(ctx)  (cue effects)
+end
+
+group Programmer layer (wins over playback)
+  Engine -> Programmer : apply(ctx)
+  Programmer -> Fixture : setColor(white) for driven
+  Programmer -> Fixture : setColor/setIntensity from m_values
+  Programmer -> Programmer : m_effects.update(ctx)
+end
+
+Engine -> Fixture : applyVirtualDimmers()  (compose, once)
+Engine -> DMXOutput : sendAll(patch)
+DMXOutput -> Patch : read each Universe buffer
+DMXOutput --> App : sACN packets on the wire
+Engine -> Patch : clearDirty()
+@enduml
+
+
+' ---------------------------------------------------------------------
+' 3. PATCH + STORE FLOW
+' ---------------------------------------------------------------------
+@startuml architecture-patch-store
+title Patching a fixture, then storing a look to a cue
+skinparam sequenceMessageAlign center
+
+actor User
+participant Engine
+participant Patch
+participant FixtureLibrary
+participant Universe
+participant Fixture
+participant Programmer
+participant Sequence
+
+== Define & patch ==
+User -> Engine : define("LED Par")
+Engine -> FixtureLibrary : define(name)
+User -> FixtureLibrary : add color/dimmer Descriptors
+User -> Engine : patch("LED Par", uni=1, amount=6)
+Engine -> Patch : patch(...)
+Patch -> FixtureLibrary : get definition
+Patch -> Universe : addFixtures(copy, count, start)
+Universe -> Fixture : place + wire buffer/offsets to universe
+Patch --> User : FIDs [1..6]
+
+== Program a look ==
+User -> Engine : group("wash").add(fids)
+User -> Programmer : select(group)
+User -> Programmer : setColor(blue) / addEffect(chase)
+note right of Programmer : accumulates in\nm_values / m_effects
+
+== Store to a cue ==
+User -> Engine : storeCue("main", 1.0)
+Engine -> Programmer : makeCue(1.0)
+Programmer --> Engine : Cue { values by FID, effects as Spec }
+Engine -> Sequence : store(cue)
+
+== Recall ==
+User -> Engine : go("main")
+Engine -> Sequence : go(patch)
+Sequence -> Sequence : instantiate() - build effects from Specs via EffectFactory
+note right of Sequence : cue now renders every frame\n(see frame diagram)
+@enduml

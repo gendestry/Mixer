@@ -1,0 +1,206 @@
+@startuml
+title Mixer - Pools, Programmer & Attributes
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+' =====================================================================
+' STORED / POOLABLE LAYER  -- everything here is keyed by FID and is
+' serializable & patch-stable. No shared_ptr<Fixture> ever lives here.
+' =====================================================================
+package "Core::Attributes" {
+
+  abstract class Attribute {
+    - m_name : string
+    - m_id   : int
+    + name() : const string&
+    + setName(string)
+    + id() : int
+    + setId(int)
+    + {abstract} describe() : string
+  }
+
+  enum Feature {
+    Color
+    Intensity
+    Position
+    Dimmer
+  }
+
+  enum RecallMode {
+    Absolute
+    ByIndex
+  }
+
+  struct ParamValues {
+    - byType : map<Parameters::Type, float>   ' normalized 0..1
+    + set(Parameters::Type, float)
+    + get(Parameters::Type) : optional<float>
+    + merge(ParamValues)
+  }
+
+  class Group extends Attribute {
+    - m_fids : vector<uint16_t>
+    + fids() : const vector<uint16_t>&
+    + setFids(vector<uint16_t>)
+    + describe() : string
+  }
+
+  class Preset extends Attribute {
+    - m_feature : Feature
+    - m_mode    : RecallMode
+    - m_values  : map<uint16_t, ParamValues>   ' per-fid palette
+    + feature() : Feature
+    + mode() : RecallMode
+    + valuesFor(uint16_t fid) : const ParamValues*
+    + ordered() : vector<ParamValues>          ' for ByIndex fanning
+    + describe() : string
+  }
+
+  class FxPreset extends Attribute {
+    - m_specs : vector<Effects::Spec>
+    + specs() : const vector<Effects::Spec>&
+    + describe() : string
+  }
+
+  Preset "1" *-- "n" ParamValues
+  Preset --> Feature
+  Preset --> RecallMode
+}
+
+' =====================================================================
+' POOL CONTAINER  -- one generic template, one instance per pool.
+' =====================================================================
+package "Engine::Pools" {
+
+  class "Pool<T : Attribute>" as Pool <<template>> {
+    - m_items : map<int, T>
+    + store(int id, T) : T&
+    + get(int id) : T*
+    + remove(int id)
+    + rename(int id, string)
+    + contains(int id) : bool
+    + all() : vector<T*>
+  }
+}
+
+' =====================================================================
+' LIVE LAYER  -- ptr-based, mutable per frame, never serialized.
+' =====================================================================
+package "DMX" {
+  class FixtureGroup <<live / anonymous>> {
+    - m_fixtures    : vector<FixturePtr>            ' ordered, deduped
+    - m_usedUniverses : set<uint16_t>
+    - m_paramCache  : map<Parameters::Type, vector<ParamPtr>>  ' LAZY
+    - m_cacheDirty  : bool
+    + add(FixturePtr)
+    + add(FixtureGroup)
+    + clear()
+    + fixtures() : const vector<FixturePtr>&
+    + parameters(Parameters::Type) : const vector<ParamPtr>&   ' builds cache on demand
+    + size() : size_t
+  }
+}
+
+package "Engine::Live" {
+
+  struct Values {
+    + color     : optional<RGB>
+    + intensity : optional<float>
+  }
+
+  class Programmer {
+    - m_selection      : FixtureGroup                 ' anonymous union (who)
+    - m_selectedGroups : vector<int>                  ' which pooled Groups are lit
+    - m_values         : map<FixturePtr, ParamValues> ' accumulated edits (what)
+    - m_driven         : set<FixturePtr>
+    - m_effects        : EffectEngine
+    - m_latched        : bool
+    ' -- selection --
+    + select(FixtureGroup&)          ' additive; fresh after an edit
+    + clearSelection()               ' drop selection, KEEP m_values
+    + clear()                        ' wipe everything
+    + selectionFids() : vector<uint16_t>
+    ' -- authoring --
+    + setColor(RGB)                  ' per selected fixture
+    + setIntensity(float)
+    + applyColorGradient(RGB a, RGB b)   ' fan across ordered selection
+    + applyPreset(Preset&)               ' stamp preset onto selection
+    + addEffect(Effects::Spec)
+    ' -- snapshot for storing --
+    + snapshot(Feature) : map<uint16_t, ParamValues>
+    + effectSpecs() : vector<Effects::Spec>
+  }
+
+  Programmer "1" *-- "1" FixtureGroup
+  Programmer ..> Values
+  Programmer ..> ParamValues
+}
+
+' =====================================================================
+' PATCH  -- the fid <-> FixturePtr resolver, the only bridge between
+' the stored (fid) and live (ptr) layers.
+' =====================================================================
+package "Engine::Components" {
+  class Patch {
+    + byFid(uint16_t) : FixturePtr
+    + fixtures() : vector<FixturePtr>
+  }
+}
+
+' =====================================================================
+' ENGINE  -- owns pools + programmer + patch; orchestrates store/recall.
+' =====================================================================
+package "Engine" {
+  class Engine {
+    - m_patch     : Patch
+    - m_programmer : Programmer
+    - m_groups    : Pool<Group>
+    - m_colors    : Pool<Preset>     ' Feature::Color
+    - m_intens    : Pool<Preset>     ' Feature::Intensity
+    - m_position  : Pool<Preset>     ' Feature::Position
+    - m_dimmer    : Pool<Preset>     ' Feature::Dimmer
+    - m_fx        : Pool<FxPreset>
+    ' -- store (programmer -> pool) --
+    + storeGroup(int id, string name)
+    + storePreset(Feature, int id, string name)
+    + storeFx(int id, string name)
+    ' -- recall (pool -> programmer) --
+    + selectGroup(int id)                 ' additive into programmer
+    + applyPreset(Feature, int id)        ' stamp onto current selection
+    + programmer() : Programmer&
+    + update()
+  }
+
+  Engine "1" *-- "1" Patch
+  Engine "1" *-- "1" Programmer
+  Engine "1" *-- "1" "Pool<Group>"
+  Engine "1" *-- "1" "Pool<Preset>"
+  Engine "1" *-- "1" "Pool<FxPreset>"
+}
+
+' ---- cross-layer relationships ----
+Engine ..> Group        : store/recall
+Engine ..> Preset       : store/recall
+Engine ..> FxPreset     : store/recall
+Group ..> FixtureGroup  : fids resolved via Patch::byFid
+Preset ..> Programmer   : applyPreset() stamps values
+Pool ..> Attribute      : T is-a
+
+note bottom of Patch
+  Boundary rule:
+  * store  -> selectionFids() / snapshot()  (FixturePtr -> fid)
+  * recall -> Patch::byFid()                (fid -> FixturePtr)
+end note
+
+note right of Preset
+  Palette   = per-fid values set per group.
+  Gradient  = per-fid values fanned across
+              the ordered selection, then stored.
+  Both are the SAME map<fid, ParamValues>.
+  RecallMode::ByIndex re-spreads by position
+  onto any selection size.
+end note
+
+@enduml
