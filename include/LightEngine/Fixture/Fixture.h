@@ -32,6 +32,7 @@ namespace LightEngine
         uint16_t                                          m_universe = 0; // universe it is patched into
         std::vector<ParamPtr>                             m_parameters;  // in layout order
         std::map<Parameters::Type, std::vector<ParamPtr>> m_byType;      // indexed by capability
+        uint8_t*                                          buffer = nullptr; // -> universe buffer (non-owning)
 
         [[nodiscard]] Parameters::Parameter* firstOfType(Parameters::Type t) const;
         void rebindVirtualDimmers();
@@ -56,7 +57,7 @@ namespace LightEngine
 
         // ---- Fragment hooks: propagate placement to the contained parameters ----
         void setStart(uint32_t st) override;
-        void setBuffer(uint8_t* buf) override;
+        void setBuffer(uint8_t* buf);
 
         // ---- identity ----
         [[nodiscard]] uint16_t fid() const { return m_fid; }

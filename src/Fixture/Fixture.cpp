@@ -103,7 +103,7 @@ namespace LightEngine
 
     void Fixture::setBuffer(uint8_t* buf)
     {
-        Utils::Fragment::setBuffer(buf);
+        buffer = buf;
         for (const auto& p : m_parameters)
             p->setBuffer(buf);
     }
